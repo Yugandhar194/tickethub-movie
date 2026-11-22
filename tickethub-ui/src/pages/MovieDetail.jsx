@@ -181,7 +181,7 @@ export default function MovieDetail() {
         {movie.trailerKey && (
           <section aria-labelledby="tr-title" className="max-w-4xl">
             <h2 id="tr-title" className="mb-4 text-xl font-extrabold">Trailer</h2>
-            <TrailerEmbed trailerKey={movie.trailerKey} title={movie.title} backdrop={movie.backdrop} />
+            <TrailerEmbed trailerKey={movie.trailerKey} title={movie.title} backdrop={movie.backdrop} paused={trailer.open} />
           </section>
         )}
 

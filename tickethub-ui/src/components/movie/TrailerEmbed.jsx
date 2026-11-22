@@ -1,18 +1,22 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Play } from 'lucide-react';
 import SmartImage from '../ui/SmartImage';
 import { img } from '../../lib/posters';
 
 // The player only loads after a click, so the page does not pull in YouTube until the viewer asks for it.
-export default function TrailerEmbed({ trailerKey, title, backdrop }) {
+export default function TrailerEmbed({ trailerKey, title, backdrop, paused = false }) {
   const [playing, setPlaying] = useState(false);
+  useEffect(() => {
+    if (paused) setPlaying(false);
+  }, [paused]);
+
   if (!trailerKey) return null;
   return (
     <div className="relative aspect-video w-full overflow-hidden rounded-panel bg-black ring-1 ring-white/10">
-      {playing ? (
+      {playing && !paused ? (
         <iframe
           className="absolute inset-0 h-full w-full"
-          src={`https://www.youtube-nocookie.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1`}
+          src={`https://www.youtube-nocookie.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
           title={`${title} trailer`}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
