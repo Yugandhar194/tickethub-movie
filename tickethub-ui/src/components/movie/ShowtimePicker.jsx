@@ -1,19 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { CalendarX, MapPin, ServerOff } from 'lucide-react';
 import { fetchBookedSeats } from '../../api/backend';
 import { getLocalIndex } from '../../api/catalog';
+import { AUTH_API_BASE_URL } from '../../config/env';
 import { TOTAL_SEATS } from '../../config/seatTiers';
 import { useAsync, useLocalStorage } from '../../hooks/useAsync';
-import { addDays, cn, formatINR, formatTime, showStart, toISODate } from '../../lib/format';
+import { addDays, cn, formatCurrency, formatDate, formatTime, showStart, toISODate } from '../../lib/format';
 import { rememberShowtime } from '../../lib/bookingStore';
 import { fetchShowtimes } from '../../api/backend';
 import EmptyState from '../ui/EmptyState';
 import Skeleton from '../ui/Skeleton';
 
-const status = (free) => {
+const status = (free, total = TOTAL_SEATS) => {
   if (free <= 0) return 'sold';
-  if (free / TOTAL_SEATS <= 0.25) return 'fast';
+  if (free / total <= 0.25) return 'fast';
   return 'open';
 };
 const pillTone = {
@@ -25,18 +26,24 @@ const pillTone = {
 
 export function useShowtimes(movie) {
   return useAsync(async () => {
+    if (!movie) return { shows: [], online: true };
+    if (AUTH_API_BASE_URL) {
+      const shows = await fetchShowtimes(movie.title, movie.title);
+      return { shows, online: true };
+    }
     if (!movie?.localId) {
       const idx = await getLocalIndex().catch(() => ({ online: false }));
       return { shows: [], online: idx.online };
     }
     const shows = await fetchShowtimes(movie.localId);
     return { shows, online: true };
-  }, [movie?.localId, movie?.id]);
+  }, [movie?.localId, movie?.id, movie?.title]);
 }
 
 export default function ShowtimePicker({ movie, state }) {
   const nav = useNavigate();
   const { data, loading, error } = state;
+  const cineholdMode = Boolean(AUTH_API_BASE_URL);
   const today = useMemo(() => new Date(), []);
   const todayISO = toISODate(today);
   const shows = useMemo(() => (data?.shows || []).filter((s) => s.date >= todayISO), [data, todayISO]);
@@ -77,8 +84,8 @@ export default function ShowtimePicker({ movie, state }) {
       if (asked.current.has(s.id)) return;
       asked.current.add(s.id);
       fetchBookedSeats(s.id)
-        .then((rows) => setFree((f) => ({ ...f, [s.id]: TOTAL_SEATS - rows.length })))
-        .catch(() => setFree((f) => ({ ...f, [s.id]: s.availableSeats > 0 ? s.availableSeats : TOTAL_SEATS })));
+        .then((rows) => setFree((f) => ({ ...f, [s.id]: (s.totalSeats || TOTAL_SEATS) - rows.length })))
+        .catch(() => setFree((f) => ({ ...f, [s.id]: s.availableSeats > 0 ? s.availableSeats : (s.totalSeats || TOTAL_SEATS) })));
     });
   }, [visible]);
 
@@ -98,9 +105,19 @@ export default function ShowtimePicker({ movie, state }) {
       date: s.date,
       time: s.time,
       amount: s.amount,
+      currency: s.currency || 'INR',
       format: s.format || '',
       theater: s.theater,
-      movie: { id: movie.id, title: movie.title, poster: movie.poster, backdrop: movie.backdrop, runtime: movie.runtime },
+      seatMap: s.seatMap || null,
+      totalSeats: s.totalSeats || TOTAL_SEATS,
+      movie: {
+        id: movie.id,
+        title: movie.title,
+        poster: movie.poster || s.movie?.poster_path,
+        poster_path: movie.poster_path || s.movie?.poster_path || movie.poster,
+        backdrop: movie.backdrop,
+        runtime: movie.runtime || s.movie?.runtime,
+      },
     });
     nav(`/book/${s.id}`);
   };
@@ -117,12 +134,15 @@ export default function ShowtimePicker({ movie, state }) {
   if (error || data?.online === false) {
     return (
       <EmptyState icon={ServerOff} title="Showtimes are unavailable right now">
-        We could not reach the TicketHub server. Check that the backend is running and try again.
+        {cineholdMode
+          ? <>Sign in first, and confirm the Cinehold API and its database are running. We could not load its schedules.</>
+          : <>We could not reach the TicketHub server. Check that the backend is running and try again.</>}
+        {cineholdMode && <Link to="/login" className="ml-1 font-semibold text-ink underline underline-offset-4">Sign in</Link>}
       </EmptyState>
     );
   }
 
-  if (!movie.localId) {
+  if (!movie.localId && !cineholdMode) {
     const upcoming = movie.releaseDate && movie.releaseDate > todayISO;
     return (
       <EmptyState icon={CalendarX} title={upcoming ? `Tickets open closer to ${movie.releaseDate.slice(0, 4) === String(today.getFullYear()) ? 'release' : 'the release date'}` : 'Not scheduled at a TicketHub theater yet'}>
@@ -203,8 +223,9 @@ export default function ShowtimePicker({ movie, state }) {
               <ul className="flex flex-wrap gap-3">
                 {list.map((s) => {
                   const f = free[s.id];
+                  const totalSeats = s.totalSeats || TOTAL_SEATS;
                   const started = (showStart(s.date, s.time) || 0) < new Date();
-                  const st = started ? 'started' : f === undefined ? 'open' : status(f);
+                  const st = started ? 'started' : f === undefined ? 'open' : status(f, totalSeats);
                   const disabled = st === 'sold' || st === 'started';
                   const label = { open: 'Available', fast: 'Filling fast', sold: 'Sold out', started: 'Started' }[st];
                   return (
@@ -212,11 +233,11 @@ export default function ShowtimePicker({ movie, state }) {
                       <button
                         disabled={disabled}
                         onClick={() => open(s)}
-                        aria-label={`${formatTime(s.time)}, ${formatINR(s.amount)}, ${label}`}
+                        aria-label={`${formatTime(s.time)}, ${formatCurrency(s.amount, s.currency)}, ${label}`}
                         className={cn('min-w-[104px] rounded-xl border px-4 py-2.5 text-left transition', pillTone[st])}
                       >
                         <span className="num block text-[15px] font-extrabold">{formatTime(s.time)}</span>
-                        <span className="num block text-xs opacity-80">{formatINR(s.amount)}{s.format ? ` · ${s.format}` : ''}</span>
+                        <span className="num block text-xs opacity-80">{formatCurrency(s.amount, s.currency)}{s.format ? ` · ${s.format}` : ''}</span>
                         <span className="mt-1 block text-[11px] font-semibold opacity-90">{label}</span>
                       </button>
                     </li>

@@ -13,7 +13,7 @@ const films = [
   ['Mock Skies', 'Romance', -15, 7.4, 210_000_000], ['Mock Frequency', 'Thriller', -9, 6.9, 130_000_000], ['Mock Orchard', 'Science Fiction', -4, 7.3, 64_000_000],
   ['Mock Embers', 'Adventure', 9, 0, 0], ['Mock Machines', 'Mystery', 16, 0, 0],
 ].map(([title, category, off, vote_average, revenue], i) => ({
-  id: i + 1, movieId: 900000 + i, title, overview: `${title} is sample data served by the local mock backend.`, vote_average, vote_count: vote_average ? 1200 + i * 90 : 0,
+  id: i + 1, movieId: null, title, overview: `${title} is sample data served by the local mock backend.`, vote_average, vote_count: vote_average ? 1200 + i * 90 : 0,
   release_date: day(off), backdrop_path: null, poster_path: null, status: off > 0 ? 'Post Production' : 'Released', category, tagline: 'Sample tagline', revenue, runtime: 110 + i * 4,
   type: off > 0 ? 'Upcoming' : i < 5 ? 'NowPlaying' : 'Trending',
 }));
@@ -28,6 +28,7 @@ films.filter((f) => f.type !== 'Upcoming').forEach((f) => {
 const booked = new Map(); // showtimeId -> Set of seats
 showtimes.forEach((s) => booked.set(s.id, new Set(['D5', 'D6', 'E7', 'F3', 'G9', 'G10'].filter((_, i) => (s.id + i) % 2 === 0))));
 const bookings = [];
+let nextPaymentOrder = 1;
 const users = [
   { id: 1, name: 'Asha Verma', email: 'user@tickethub.test', phone: '9000000001', gender: 'FEMALE', maritalStatus: 'UNMARRIED', dob: '1996-04-12', role: 'USER' },
   { id: 2, name: 'Ravi Kulkarni', email: 'ravi@tickethub.test', phone: '9000000002', gender: 'MALE', maritalStatus: 'MARRIED', dob: '1990-01-02', role: 'USER' },
@@ -69,7 +70,11 @@ http.createServer(async (req, res) => {
   if ((x = m(/^\/user\/(updateUser|deleteUser)\/(\d+)$/))) return send(res, 200, { message: 'Done' });
   if (p === '/theaterowner/getAllUsers') return send(res, 200, owners);
   if ((x = m(/^\/theaterowner\/(\d+)$/))) return send(res, 200, owners[0]);
-  if (p === '/api/payments/create') return send(res, 200, JSON.stringify({ id: 'order_mock', amount: Number(url.searchParams.get('amount')) * 100, currency: 'INR' }), 'text/plain');
+  if (p === '/api/payments/create') {
+    const amount = Number(url.searchParams.get('amount'));
+    if (!Number.isFinite(amount) || amount <= 0) return send(res, 400, { message: 'A valid payment amount is required.' });
+    return send(res, 200, { id: `order_demo_${nextPaymentOrder++}`, amount: Math.round(amount * 100), currency: 'INR', mock: true });
+  }
   if (p === '/api/payments/success') return send(res, 200, '');
   if ((x = m(/^\/tickets\/download\/(\d+)$/))) return send(res, 200, '%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF', 'application/pdf');
   if (p === '/contact/send') return send(res, 200, 'Email sent successfully!', 'text/plain');

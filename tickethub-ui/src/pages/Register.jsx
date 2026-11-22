@@ -10,6 +10,10 @@ import { Field } from '../components/auth/Field';
 import Button from '../components/ui/Button';
 
 const EMAIL = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+const validPhone = (value = '') => {
+  const compact = value.trim().replace(/[ \-()]/g, '');
+  return /^\d{10}$/.test(compact) || /^\+[1-9]\d{7,14}$/.test(compact);
+};
 
 export default function Register() {
   const { user } = useAuth();
@@ -54,7 +58,8 @@ export default function Register() {
           <input type="email" autoComplete="email" className="field" aria-invalid={!!errors.email} {...register('email', { required: 'Enter your email', pattern: { value: EMAIL, message: 'Enter a valid email address' }, onBlur: (e) => verify('email', e.target.value, checkEmail, 'An account with this email already exists.') })} />
         </Field>
         <Field label="Phone" error={errors.phone?.message}>
-          <input type="tel" autoComplete="tel" className="field" aria-invalid={!!errors.phone} {...register('phone', { required: 'Enter your phone number', onBlur: (e) => verify('phone', e.target.value, checkPhone, 'This phone number is already in use.') })} />
+          <input type="tel" autoComplete="tel" className="field" aria-invalid={!!errors.phone} {...register('phone', { required: 'Enter your phone number', onBlur: (e) => validPhone(e.target.value) ? verify('phone', e.target.value, checkPhone, 'This phone number is already in use.') : setError('phone', { type: 'manual', message: 'Enter 10 digits for India or an international number with country code.' }) })} />
+          <p className="mt-1 text-xs text-mute">10-digit Indian numbers use +91. International numbers should include their country code.</p>
         </Field>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Date of birth" error={errors.dob?.message}>

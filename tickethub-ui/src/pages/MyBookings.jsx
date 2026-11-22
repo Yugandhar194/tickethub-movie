@@ -6,7 +6,8 @@ import { cancelBooking, errorMessage, fetchBookingsByUser } from '../api/backend
 import { useAsync } from '../hooks/useAsync';
 import { useAuth } from '../context/AuthContext';
 import { loadBookingMeta } from '../lib/bookingStore';
-import { bookingCode, cn, formatDate, formatINR, formatTime, showStart } from '../lib/format';
+import { AUTH_API_BASE_URL } from '../config/env';
+import { bookingCode, cn, formatCurrency, formatDate, formatTime, showStart } from '../lib/format';
 import { img } from '../lib/posters';
 import SmartImage from '../components/ui/SmartImage';
 import Button from '../components/ui/Button';
@@ -76,7 +77,8 @@ export default function MyBookings() {
           const m = s.movie || {};
           const seats = b.seatNumbers?.length ? b.seatNumbers : loadBookingMeta(b.id)?.seats || [];
           const pending = b.status === 'PENDING';
-          const canCancel = tab === 'upcoming' && b.start && b.start.getTime() - Date.now() > 2 * HOURS;
+          const paymentIssue = b.status === 'PAYMENT_ISSUE';
+          const canCancel = !AUTH_API_BASE_URL && tab === 'upcoming' && b.start && b.start.getTime() - Date.now() > 2 * HOURS;
           return (
             <article key={b.id} className="flex gap-4 rounded-panel border hairline bg-white/[0.03] p-4 sm:gap-6 sm:p-5">
               <SmartImage src={img(m.poster_path, 'w342')} title={m.title} className="h-32 w-[86px] shrink-0 rounded-xl sm:h-36 sm:w-24" />
@@ -86,12 +88,14 @@ export default function MyBookings() {
                     <h2 className="truncate text-lg font-extrabold">{m.title}</h2>
                     <p className="truncate text-sm text-mute">{s.theater?.name}{s.theater?.location ? `, ${s.theater.location}` : ''}</p>
                   </div>
-                  <span className="num shrink-0 text-xs text-faint">{pending ? 'Awaiting payment' : bookingCode(b.id)}</span>
+                  <span className="num shrink-0 text-xs text-faint">{pending ? 'Awaiting payment' : paymentIssue ? 'Payment needs support' : bookingCode(b.id)}</span>
                 </div>
                 <p className="num mt-2 text-sm"><span className="font-semibold">{formatDate(s.date, { weekday: 'short', day: 'numeric', month: 'short' })}</span>, {formatTime(s.time)}</p>
-                <p className="num mt-1 text-sm text-mute">{seats.length ? seats.join(', ') : `${b.noOfSeat} ${b.noOfSeat === 1 ? 'seat' : 'seats'}`}{s.amount ? ` · ${formatINR(s.amount * b.noOfSeat)}` : ''}</p>
+                <p className="num mt-1 text-sm text-mute">{seats.length ? seats.join(', ') : `${b.noOfSeat} ${b.noOfSeat === 1 ? 'seat' : 'seats'}`}{s.amount ? ` · ${formatCurrency(s.amount * b.noOfSeat, s.currency)}` : ''}</p>
                 <div className="mt-auto flex flex-wrap gap-2 pt-4">
-                  {pending ? (
+                  {paymentIssue ? (
+                    <Button size="sm" to="/contact" variant="secondary">Contact support</Button>
+                  ) : pending ? (
                     <Button size="sm" to={`/checkout/${b.id}`}>Pay to confirm</Button>
                   ) : (
                     <Button size="sm" variant="secondary" onClick={() => setPass(b)}><QrCode className="h-4 w-4" aria-hidden />Show pass</Button>

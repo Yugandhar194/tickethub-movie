@@ -17,6 +17,7 @@ import PosterRow from '../components/movie/PosterRow';
 import PosterCard from '../components/movie/PosterCard';
 import ShowtimePicker, { useShowtimes } from '../components/movie/ShowtimePicker';
 import { formatDate, formatINR, formatRuntime, formatUSD, formatUSDCompact, releaseYear } from '../lib/format';
+import { AUTH_API_BASE_URL } from '../config/env';
 import { img } from '../lib/posters';
 
 const langName = (code) => {
@@ -121,7 +122,7 @@ export default function MovieDetail() {
             </div>
             <div className="mt-7 flex flex-wrap gap-3">
               <Button size="lg" href="#showtimes" onClick={(e) => { e.preventDefault(); document.getElementById('showtimes')?.scrollIntoView({ behavior: 'smooth' }); }}>
-                <Ticket className="h-5 w-5" aria-hidden /> Book tickets
+                <Ticket className="h-5 w-5" aria-hidden /> {AUTH_API_BASE_URL ? 'View showtimes' : 'Book tickets'}
               </Button>
               {(movie.trailerKey || movie.tmdbId) && (
                 <Button size="lg" variant="secondary" onClick={() => trailer.play(movie)}>
@@ -192,7 +193,7 @@ export default function MovieDetail() {
         )}
       </div>
 
-      {movie.localId && !upcoming && (
+      {movie.localId && !AUTH_API_BASE_URL && !upcoming && (
         <div className="glass no-print fixed inset-x-0 bottom-[calc(3.8rem+env(safe-area-inset-bottom))] z-30 flex items-center justify-between gap-4 border-x-0 px-4 py-2.5 md:hidden">
           <div>
             <p className="text-xs text-mute">Tickets from</p>

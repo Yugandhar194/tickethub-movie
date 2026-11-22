@@ -86,6 +86,22 @@ The mock API keeps demo data in memory and resets when restarted. Use one of the
 
 For the mock sign-in flow, any password works and the one-time code is `123456`. Mock payments are not real transactions.
 
+### Email and WhatsApp OTP, schedules, and checkout with Cinehold
+
+The Go Cinehold API issues its existing JWT and refresh token only after a one-time code is verified. Email OTP uses SMTP; WhatsApp OTP uses a Twilio Verify service with WhatsApp enabled. Provider credentials, the database URL, and signing secrets belong only in the Cinehold server's `.env`, never in a `VITE_` variable.
+
+1. Configure Cinehold's PostgreSQL database and apply its migrations, including `012_add_auth_otp_fields.sql` and `013_create_payment_orders.sql`.
+2. Set `PLATFORM=http://localhost:5173`, `JWT_SECRET`, `OTP_SECRET`, and SMTP settings in Cinehold's server-only `.env`. Add Twilio Verify settings for WhatsApp. Never put these credentials in the Vite `.env`.
+3. For a no-charge demo, explicitly set `PAYMENT_MODE=demo`. For Razorpay Test Mode, use `PAYMENT_MODE=razorpay`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, and `RAZORPAY_WEBHOOK_SECRET` on the Cinehold server. Register `https://<your-api-origin>/api/payments/razorpay/webhook` in Razorpay and subscribe to `payment.captured`. Set `APP_ENV=production` only with Razorpay mode enabled.
+4. Start Cinehold (`go run .`). Set `VITE_AUTH_API_BASE_URL` to its origin. If the mock API is also running on port 8080, run Cinehold on port 8081 and point this variable at `http://localhost:8081`.
+5. Start Vite with `npm run dev`. With Cinehold selected, customers can choose a schedule, reserve seats, add snacks for INR-priced shows, and pay in demo or Razorpay mode. A confirmed booking appears under My bookings and can be printed as a ticket.
+
+The Cinehold API issues its existing JWT and refresh token only after OTP verification. Email OTP uses SMTP; WhatsApp OTP uses a Twilio Verify service with WhatsApp enabled. New registrations store phone numbers in E.164 format (10-digit Indian numbers are normalized to `+91`).
+
+Convenience-fee and GST percentages are computed by Cinehold. If you change `CONVENIENCE_FEE_PCT` or `GST_PCT` on the server, set the same values in Vite's `VITE_CONVENIENCE_FEE_PCT` and `VITE_GST_PCT` for the displayed estimate. Food is offered only for INR schedules because menu prices are INR. Cinehold's seed schedules are fictional development data; only theater-verified schedules should be presented as real showtimes. Paid booking cancellation/refunds are not yet automated, so Cinehold mode does not offer cancellation.
+
+> **Showtime data:** Cinehold stores schedules entered by an administrator; it does not provide a live cinema schedule feed. Its included seed schedules are fictional development data. Only schedule records verified by the theater should be shown as actual showtimes.
+
 ## ⚙️ Configuration
 
 Set values in `.env` before starting Vite. Values prefixed with `VITE_` are included in the client bundle; **never put private credentials or server-side secrets in this file**.
@@ -94,6 +110,7 @@ Set values in `.env` before starting Vite. Values prefixed with `VITE_` are incl
 |---|---|---|
 | `VITE_BACKEND` | API contract to use: `spring` or `dotnet` | `spring` |
 | `VITE_API_BASE_URL` | TicketHub API origin | `http://localhost:8080` |
+| `VITE_AUTH_API_BASE_URL` | Cinehold API origin for OTP, showtimes, seats and checkout | Empty |
 | `VITE_TMDB_API_KEY` | Live movie listings, details and trailers | Empty |
 | `VITE_TMDB_REGION` | Movie region | `IN` |
 | `VITE_TMDB_LANGUAGE` | Movie language | `en-US` |
@@ -101,7 +118,7 @@ Set values in `.env` before starting Vite. Values prefixed with `VITE_` are incl
 | `VITE_RAZORPAY_KEY_ID` | Public Razorpay key ID used by checkout | Empty |
 | `VITE_CONVENIENCE_FEE_PCT` | Optional checkout fee percentage | `0` |
 | `VITE_GST_PCT` | Optional GST percentage | `0` |
-| `VITE_SEAT_HOLD_MINUTES` | Client-side seat selection timer | `8` |
+| `VITE_SEAT_HOLD_MINUTES` | Demo client-side selection timer | `8` |
 | `VITE_ENABLE_PROFILE_EDIT` | Enable account profile editing | `false` |
 
 Without a TMDB key, the app can use movies from the configured backend and then fall back to a clearly labelled sample set. Movie responses from TMDB are cached in the browser.

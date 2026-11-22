@@ -1,0 +1,130 @@
+{
+  "planHash": "549a9b42606e198334df3edc82bb402d77080acd3c9b7a61dd8ff3a60f7ecd28",
+  "phase": "standalone",
+  "recordedAtUtc": "2026-11-22T13:58:45.5580633Z",
+  "retryCount": 3,
+  "resetBaseline": false,
+  "complete": true,
+  "result": {
+    "setupSucceeded": true,
+    "setupDurationMs": 1872,
+    "setupFailureOutput": null,
+    "assertions": [
+      {
+        "name": "production-build",
+        "kind": "process",
+        "verificationMethod": "exit-code",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 0,
+        "outputSample": "\r\n\u003E tickethub-ui@2.0.0 build\r\n\u003E vite build\r\n\r\n\u001B[36mvite v6.4.6 \u001B[32mbuilding for production...\u001B[36m\u001B[39m\r\ntransforming...\r\n\u001B[32m\u2713\u001B[39m 2080 modules transformed.\r\nrendering chunks...\r\ncomputing gzip size...\r\n\u001B[2mdist/\u001B[22m\u001B[32mindex.html                          \u001B[39m\u001B[1m\u001B[2m  1.16 kB\u001B[22m\u001B[1m\u001B[22m\u001B[2m \u2502 gzip:  0.56 kB\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[32massets/coke-DJ1iVije.jpg            \u001B[39m\u001B[1m\u001B[2m  5.26 kB\u001B[22m\u001B[1m\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[32massets/samosa-17ZK9BpM.jpg          \u001B[39m\u001B[1m\u001B[2m  5.95 kB\u001B[22m\u001B[1m\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[32massets/kachori-Nk61sQAZ.jpg         \u001B[39m\u001B[1m\u001B[2m  8.45 kB\u001B[22m\u001B[1m\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[32massets/tea-DYdnMz4v.jpg             \u001B[39m\u001B[1m\u001B[2m  9.42 kB\u001B[22m\u001B[1m\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[32massets/coffee-B61qU0wb.jpg          \u001B[39m\u001B[1m\u001B[2m  9.66 kB\u001B[22m\u001B[1m\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[32massets/salted-popcorn-DbrINZjs.jpg  \u001B[39m\u001B[1m\u001B[2m 10.42 kB\u001B[22m\u001B[1m\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[32massets/puff-SXk1Okuz.jpg            \u001B[39m\u001B[1m\u001B[2m 12.24 kB\u001B[22m\u001B[1m\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[32massets/masala-coke-D-COVol9.jpg     \u001B[39m\u001B[1m\u001B[2m 13.12 kB\u001B[22m\u001B[1m\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[32massets/popcorn-nftNkNJQ.jpg         \u001B[39m\u001B[1m\u001B[2m 13.39 kB\u001B[22m\u001B[1m\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[32massets/nachos-BCbD6Y7Y.jpg          \u001B[39m\u001B[1m\u001B[2m123.51 kB\u001B[22m\u001B[1m\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[35massets/index-B3iq7mqj.css           \u001B[39m\u001B[1m\u001B[2m 57.31 kB\u001B[22m\u001B[1m\u001B[22m\u001B[2m \u2502 gzip: 11.14 kB\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[36massets/pricing-D-lvLe65.js          \u001B[39m\u001B[1m\u001B[2m  0.66 kB\u001B[22m\u001B[1m\u001B[22m\u001B[2m \u2502 gzip:  0.48 kB\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[36massets/Owner-D879QzWQ.js            \u001B[39m\u001B[1m\u001B[2m  2.83 kB\u001B[22m\u001B[1m\u001B[22m\u001B[2m \u2502 gzip:  1.24 kB\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[36massets/Account-B5gZ6kQA.js          \u001B[39m\u001B[1m\u001B[2m  3.45 kB\u001B[22m\u001B[1m\u001B[22m\u001B[2m \u2502 gzip:  1.42 kB\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[36massets/parts-BhWzvKRB.js            \u001B[39m\u001B[1m\u001B[2m  4.01 kB\u001B[22m\u001B[1m\u001B[22m\u001B[2m \u2502 gzip:  1.62 kB\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[36massets/Ticket-2BnWA9Pm.js           \u001B[39m\u001B[1m\u001B[2m  4.36 kB\u001B[22m\u001B[1m\u001B[22m\u001B[2m \u2502 gzip:  1.88 kB\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[36massets/MyBookings-NbQi0Obk.js       \u001B[39m\u001B[1m\u001B[2m  6.63 kB\u001B[22m\u001B[1m\u001B[22m\u001B[2m \u2502 gzip:  2.80 kB\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[36massets/Admin-B012RQ_8.js            \u001B[39m\u001B[1m\u001B[2m  7.81 kB\u001B[22m\u001B[1m\u001B[22m\u001B[2m \u2502 gzip:  2.96 kB\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[36massets/Checkout-CuR1F4qp.js         \u001B[39m\u001B[1m\u001B[2m 11.07 kB\u001B[22m\u001B[1m\u001B[22m\u001B[2m \u2502 gzip:  4.21 kB\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[36massets/SeatSelection-JZQnQ11O.js    \u001B[39m\u001B[1m\u001B[2m 15.70 kB\u001B[22m\u001B[1m\u001B[22m\u001B[2m \u2502 gzip:  5.75 kB\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[36massets/TicketPass-BG38ibU5.js       \u001B[39m\u001B[1m\u001B[2m 20.11 kB\u001B[22m\u001B[1m\u001B[22m\u001B[2m \u2502 gzip:  7.43 kB\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[36massets/motion-_tHN0lnn.js           \u001B[39m\u001B[1m\u001B[2m115.69 kB\u001B[22m\u001B[1m\u001B[22m\u001B[2m \u2502 gzip: 38.40 kB\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[36massets/react-BDhyzZyb.js            \u001B[39m\u001B[1m\u001B[2m182.19 kB\u001B[22m\u001B[1m\u001B[22m\u001B[2m \u2502 gzip: 60.07 kB\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[36massets/index-FWgHKWvy.js            \u001B[39m\u001B[1m\u001B[2m229.75 kB\u001B[22m\u001B[1m\u001B[22m\u001B[2m \u2502 gzip: 79.09 kB\u001B[22m\r\n\u001B[32m\u2713 built in 4.54s\u001B[39m\r\n",
+        "durationMs": 6091
+      },
+      {
+        "name": "tests-pass",
+        "kind": "process",
+        "verificationMethod": "test-results",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 0,
+        "outputSample": "\r\n\u003E tickethub-ui@2.0.0 test\r\n\u003E vitest run\r\n\r\n\r\n RUN  v5.1.1 C:/Users/HP/OneDrive/Desktop/My Resumes/Updated/tickethub-ui/tickethub-ui\r\n\r\n\r\n Test Files  2 passed (2)\r\n      Tests  3 passed (3)\r\n   Start at  19:28:43\r\n   Duration  546ms (import 48%, transform 23%, worker 19%, tests 9%, environment 1%)\r\n\r\n",
+        "durationMs": 1691,
+        "testResults": {
+          "testFramework": "vitest",
+          "runnerDetectedFrom": "package_json",
+          "testsTotal": 3,
+          "testsPassed": 3,
+          "testsFailed": 0,
+          "testsSkipped": 0,
+          "parseFailed": false
+        }
+      },
+      {
+        "name": "mock-api-nowplaying",
+        "kind": "http-probe",
+        "verificationMethod": "http-status",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": null,
+        "outputSample": "HTTP 200\n[{\u0022id\u0022:1,\u0022movieId\u0022:null,\u0022title\u0022:\u0022Mock Harbour\u0022,\u0022overview\u0022:\u0022Mock Harbour is sample data served by the local mock backend.\u0022,\u0022vote_average\u0022:7.8,\u0022vote_count\u0022:1200,\u0022release_date\u0022:\u00222026-10-23\u0022,\u0022backdrop_path\u0022:null,\u0022poster_path\u0022:null,\u0022status\u0022:\u0022Released\u0022,\u0022category\u0022:\u0022Drama\u0022,\u0022tagline\u0022:\u0022Sample tagline\u0022,\u0022revenue\u0022:910000000,\u0022runtime\u0022:110,\u0022type\u0022:\u0022NowPlaying\u0022},{\u0022id\u0022:2,\u0022movieId\u0022:null,\u0022title\u0022:\u0022Mock Monsoon\u0022,\u0022overview\u0022:\u0022Mock Monsoon is sample data served by the local mock backend.\u0022,\u0022vote_average\u0022:7.1,\u0022vote_count\u0022:1290,\u0022release_date\u0022:\u00222026-10-31\u0022,\u0022backdrop_path\u0022:null,\u0022poster_path\u0022:null,\u0022status\u0022:\u0022Released\u0022,\u0022category\u0022:\u0022Action\u0022,\u0022tagline\u0022:\u0022Sample tagline\u0022,\u0022revenue\u0022:640000000,\u0022runtime\u0022:114,\u0022type\u0022:\u0022NowPlaying\u0022},{\u0022id\u0022:3,\u0022movieId\u0022:null,\u0022title\u0022:\u0022Mock Kingdoms\u0022,\u0022overview\u0022:\u0022Mock Kingdoms is sample data served by the local mock backend.\u0022,\u0022vote_average\u0022:8.2,\u0022vote_count\u0022:1380,\u0022release_date\u0022:\u00222026-10-12\u0022,\u0022backdrop_path\u0022:null,\u0022poster_path\u0022:null,\u0022status\u0022:\u0022Released\u0022,\u0022category\u0022:\u0022Animation\u0022,\u0022tagline\u0022:\u0022Sample tagline\u0022,\u0022revenue\u0022:520000000,\u0022runtime\u0022:118,\u0022type\u0022:\u0022NowPlaying\u0022},{\u0022id\u0022:4,\u0022movieId\u0022:null,\u0022title\u0022:\u0022Mock Skies\u0022,\u0022overview\u0022:\u0022Mock Skies is sample data served by the local mock backend.\u0022,\u0022vote_average\u0022:7.4,\u0022vote_count\u0022:1470,\u0022release_date\u0022:\u00222026-11-07\u0022,\u0022backdrop_path\u0022:null,\u0022poster_path\u0022:null,\u0022status\u0022:\u0022Released\u0022,\u0022category\u0022:\u0022Romance\u0022,\u0022tagline\u0022:\u0022Sample tagline\u0022,\u0022revenue\u0022:210000000,\u0022runtime\u0022:122,\u0022type\u0022:\u0022NowPlaying\u0022},{\u0022id\u0022:5,\u0022movieId\u0022:null,\u0022title\u0022:\u0022Mock Frequency\u0022,\u0022overview\u0022:\u0022Mock Frequency is sample data served by the local mock backend.\u0022,\u0022vote_average\u0022:6.9,\u0022vote_count\u0022:1560,\u0022release_date\u0022:\u00222026-11-13\u0022,\u0022backdrop_path\u0022:null,\u0022poster_path\u0022:null,\u0022status\u0022:\u0022Released\u0022,\u0022category\u0022:\u0022Thriller\u0022,\u0022tagline\u0022:\u0022Sample tagline\u0022,\u0022revenue\u0022:130000000,\u0022runtime\u0022:126,\u0022type\u0022:\u0022NowPlaying\u0022}]\n--- server output ---\n\r\n\u003E tickethub-ui@2.0.0 mock\r\n\u003E node scripts/mock-backend.mjs\r\n\r\nMock TicketHub API on http://localhost:18082\r\n",
+        "durationMs": 1027
+      }
+    ],
+    "executions": [
+      {
+        "source": "setup[0]",
+        "resolvedExecutable": "C:\\Program Files\\npm.CMD",
+        "args": [
+          "install",
+          "--no-audit",
+          "--no-fund"
+        ],
+        "cwd": "C:\\Users\\HP\\OneDrive\\Desktop\\My Resumes\\Updated\\tickethub-ui\\tickethub-ui",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "devServer",
+        "resolvedExecutable": "C:\\Program Files\\npm.CMD",
+        "args": [
+          "run",
+          "dev",
+          "--",
+          "--host",
+          "127.0.0.1",
+          "--port",
+          "4175",
+          "--strictPort"
+        ],
+        "cwd": "C:\\Users\\HP\\OneDrive\\Desktop\\My Resumes\\Updated\\tickethub-ui\\tickethub-ui",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "production-build",
+        "resolvedExecutable": "C:\\Program Files\\npm.CMD",
+        "args": [
+          "run",
+          "build"
+        ],
+        "cwd": "C:\\Users\\HP\\OneDrive\\Desktop\\My Resumes\\Updated\\tickethub-ui\\tickethub-ui",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "tests-pass",
+        "resolvedExecutable": "C:\\Program Files\\npm.CMD",
+        "args": [
+          "test"
+        ],
+        "cwd": "C:\\Users\\HP\\OneDrive\\Desktop\\My Resumes\\Updated\\tickethub-ui\\tickethub-ui",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "mock-api-nowplaying",
+        "resolvedExecutable": "C:\\Program Files\\npm.CMD",
+        "args": [
+          "run",
+          "mock"
+        ],
+        "cwd": "C:\\Users\\HP\\OneDrive\\Desktop\\My Resumes\\Updated\\tickethub-ui\\tickethub-ui",
+        "env": {
+          "PORT": "18082"
+        },
+        "prependPath": [],
+        "platform": "win32"
+      }
+    ]
+  }
+}

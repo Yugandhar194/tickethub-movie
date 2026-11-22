@@ -6,6 +6,14 @@ export function formatINR(value) {
   return Number.isInteger(n) ? inr0.format(n) : inr2.format(n);
 }
 
+export function formatCurrency(value, currency = 'INR') {
+  try {
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency }).format(Number(value) || 0);
+  } catch {
+    return `${currency} ${Number(value) || 0}`;
+  }
+}
+
 const usdCompact = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
@@ -68,7 +76,10 @@ export function formatRuntime(min) {
   return h ? `${h}h ${m}m` : `${m}m`;
 }
 
-export const bookingCode = (id) => `TH-${String(id).padStart(6, '0')}`;
+export const bookingCode = (id) => {
+  const value = String(id);
+  return `TH-${/^\d+$/.test(value) ? value.padStart(6, '0') : value.slice(0, 8).toUpperCase()}`;
+};
 
 export const releaseYear = (value) => {
   const d = parseISODate(value);

@@ -2,12 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ChevronUp, Clock, TriangleAlert } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { createBooking, errorMessage, fetchBookedSeats } from '../api/backend';
+import { createBooking, errorMessage, fetchBookedSeats, releaseCineholdSeat, reserveCineholdSeat } from '../api/backend';
 import { useAuth } from '../context/AuthContext';
-import { SEAT_HOLD_MINUTES } from '../config/env';
+import { AUTH_API_BASE_URL, SEAT_HOLD_MINUTES } from '../config/env';
 import { saveBookingMeta, recallShowtime } from '../lib/bookingStore';
-import { computeTotals, seatPrice } from '../lib/pricing';
-import { cn, formatDate, formatINR, formatTime, toISODate } from '../lib/format';
+import { computeTotals } from '../lib/pricing';
+import { cn, formatCurrency, formatDate, formatTime, toISODate } from '../lib/format';
 import { img } from '../lib/posters';
 import SmartImage from '../components/ui/SmartImage';
 import Button from '../components/ui/Button';
@@ -21,6 +21,7 @@ const fmtClock = (ms) => `${String(Math.floor(ms / 60000)).padStart(2, '0')}:${S
 
 function Summary({ show, selected, totals, remaining, onContinue, busy, compact }) {
   const holdMs = SEAT_HOLD_MINUTES * 60000;
+  const currency = show.currency || 'INR';
   return (
     <div className={cn('space-y-5', compact && 'space-y-4')}>
       {!compact && (
@@ -46,10 +47,10 @@ function Summary({ show, selected, totals, remaining, onContinue, busy, compact 
         )}
       </div>
       <dl className="num space-y-2 border-t hairline pt-4 text-sm">
-        <div className="flex justify-between"><dt className="text-mute">Tickets ({selected.length})</dt><dd>{formatINR(totals.tickets)}</dd></div>
-        {totals.fee > 0 && <div className="flex justify-between"><dt className="text-mute">Convenience fee</dt><dd>{formatINR(totals.fee)}</dd></div>}
-        {totals.tax > 0 && <div className="flex justify-between"><dt className="text-mute">Taxes</dt><dd>{formatINR(totals.tax)}</dd></div>}
-        <div className="flex justify-between border-t hairline pt-3 text-lg font-extrabold"><dt>Total</dt><dd>{formatINR(totals.total)}</dd></div>
+        <div className="flex justify-between"><dt className="text-mute">Tickets ({selected.length})</dt><dd>{formatCurrency(totals.tickets, currency)}</dd></div>
+        {totals.fee > 0 && <div className="flex justify-between"><dt className="text-mute">Convenience fee</dt><dd>{formatCurrency(totals.fee, currency)}</dd></div>}
+        {totals.tax > 0 && <div className="flex justify-between"><dt className="text-mute">Taxes</dt><dd>{formatCurrency(totals.tax, currency)}</dd></div>}
+        <div className="flex justify-between border-t hairline pt-3 text-lg font-extrabold"><dt>Total</dt><dd>{formatCurrency(totals.total, currency)}</dd></div>
       </dl>
       {remaining !== null && selected.length > 0 && (
         <div>
@@ -115,6 +116,7 @@ export default function SeatSelection() {
 
   // Client-side hold: the backend has no seat-lock call, so this only resets the on-screen selection.
   useEffect(() => {
+    if (AUTH_API_BASE_URL) return;
     if (!selected.length) {
       setDeadline(null);
       return;
@@ -154,6 +156,7 @@ export default function SeatSelection() {
 
   const confirm = async () => {
     setBusy(true);
+    let reservationIds = [];
     try {
       // Last check before the booking is written: the backend does not reject a seat that is already taken.
       const fresh = await loadSeats();
@@ -161,17 +164,33 @@ export default function SeatSelection() {
         setTerms(false);
         return;
       }
-      const res = await createBooking({
-        bookingDate: toISODate(new Date()),
-        noOfSeat: selected.length,
-        showtime: Number(showtimeId),
-        user: user.id,
-        seatNumbers: selected,
+      let res;
+      if (AUTH_API_BASE_URL) {
+        for (const seat of selected) {
+          const reservation = await reserveCineholdSeat(showtimeId, seat);
+          reservationIds.push(reservation.id);
+        }
+        res = await createBooking({ reservationIds });
+      } else {
+        res = await createBooking({
+          bookingDate: toISODate(new Date()),
+          noOfSeat: selected.length,
+          showtime: Number(showtimeId),
+          user: user.id,
+          seatNumbers: selected,
+        });
+      }
+      const bookingId = typeof res === 'object' && res !== null ? res.id ?? res.bookingId ?? res.BookingId : res;
+      saveBookingMeta(bookingId, {
+        seats: selected,
+        reservationIds,
+        showtimeId: AUTH_API_BASE_URL ? showtimeId : Number(showtimeId),
+        basePrice: base,
+        show,
       });
-      const bookingId = typeof res === 'object' && res !== null ? res.bookingId ?? res.BookingId : res;
-      saveBookingMeta(bookingId, { seats: selected, showtimeId: Number(showtimeId), basePrice: base, show });
       nav(`/checkout/${bookingId}`, { replace: true });
     } catch (e) {
+      await Promise.allSettled(reservationIds.map((id) => releaseCineholdSeat(id)));
       toast.error(errorMessage(e, 'We could not create your booking. Please try again.'));
       setTerms(false);
       loadSeats();
@@ -206,8 +225,8 @@ export default function SeatSelection() {
       <div className="grid gap-10 lg:grid-cols-[1fr_380px]">
         <section aria-label="Seat map" className="min-w-0">
           <ScreenCurve />
-          <div className="mt-4 pl-5 pr-0 sm:pl-6 sm:pr-14"><SeatMap seatStates={taken} selected={selected} onToggle={toggle} basePrice={base} /></div>
-          <div className="mt-8"><SeatLegend basePrice={base} showHeld={Object.values(taken).includes('held')} /></div>
+          <div className="mt-4 pl-5 pr-0 sm:pl-6 sm:pr-14"><SeatMap seatStates={taken} selected={selected} onToggle={toggle} basePrice={base} seatMap={show.seatMap} currency={show.currency} /></div>
+          <div className="mt-8"><SeatLegend basePrice={base} showHeld={Object.values(taken).includes('held')} seatMap={show.seatMap} currency={show.currency} /></div>
         </section>
 
         <aside className="glass hidden h-fit rounded-panel p-6 lg:sticky lg:top-24 lg:block" aria-label="Booking summary">
@@ -220,16 +239,16 @@ export default function SeatSelection() {
         <button onClick={() => setSheet((s) => !s)} aria-expanded={sheet} className="flex w-full items-center justify-between px-4 pt-3 text-left">
           <span>
             <span className="block text-xs text-mute">{selected.length ? selected.join(', ') : 'No seats selected'}</span>
-            <span className="num text-lg font-extrabold">{formatINR(totals.total)}</span>
+            <span className="num text-lg font-extrabold">{formatCurrency(totals.total, show.currency)}</span>
           </span>
           <ChevronUp className={cn('h-5 w-5 text-mute transition', sheet && 'rotate-180')} aria-hidden />
         </button>
         {sheet && (
           <div className="px-4 pt-3">
             <dl className="num space-y-2 text-sm">
-              <div className="flex justify-between"><dt className="text-mute">Tickets ({selected.length})</dt><dd>{formatINR(totals.tickets)}</dd></div>
-              {totals.fee > 0 && <div className="flex justify-between"><dt className="text-mute">Convenience fee</dt><dd>{formatINR(totals.fee)}</dd></div>}
-              {totals.tax > 0 && <div className="flex justify-between"><dt className="text-mute">Taxes</dt><dd>{formatINR(totals.tax)}</dd></div>}
+              <div className="flex justify-between"><dt className="text-mute">Tickets ({selected.length})</dt><dd>{formatCurrency(totals.tickets, show.currency)}</dd></div>
+              {totals.fee > 0 && <div className="flex justify-between"><dt className="text-mute">Convenience fee</dt><dd>{formatCurrency(totals.fee, show.currency)}</dd></div>}
+              {totals.tax > 0 && <div className="flex justify-between"><dt className="text-mute">Taxes</dt><dd>{formatCurrency(totals.tax, show.currency)}</dd></div>}
             </dl>
           </div>
         )}

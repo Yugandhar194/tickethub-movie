@@ -16,8 +16,10 @@ const read = () => {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(read);
 
-  const login = useCallback((profile, token) => {
+  const login = useCallback((profile, token, refreshToken) => {
     if (token) sessionStorage.setItem('th_token', token);
+    if (refreshToken) sessionStorage.setItem('th_refresh_token', refreshToken);
+    else sessionStorage.removeItem('th_refresh_token');
     sessionStorage.setItem(KEY, JSON.stringify(profile));
     setUser(profile);
   }, []);
@@ -25,6 +27,7 @@ export function AuthProvider({ children }) {
   const logout = useCallback(() => {
     sessionStorage.removeItem(KEY);
     sessionStorage.removeItem('th_token');
+    sessionStorage.removeItem('th_refresh_token');
     setUser(null);
   }, []);
 

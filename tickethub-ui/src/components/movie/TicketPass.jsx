@@ -1,6 +1,6 @@
 import { QRCodeSVG } from 'qrcode.react';
 import SmartImage from '../ui/SmartImage';
-import { bookingCode, formatDate, formatINR, formatTime } from '../../lib/format';
+import { bookingCode, formatCurrency, formatDate, formatTime } from '../../lib/format';
 import { img } from '../../lib/posters';
 
 // Wallet-style pass: details above a perforated tear line, scannable code below.
@@ -36,7 +36,7 @@ export default function TicketPass({ booking, seats = [] }) {
                 {seats.length ? seats.map((s) => <span key={s} className="num rounded-lg bg-white/15 px-2.5 py-1 text-sm font-extrabold">{s}</span>) : <span className="num font-bold">{count} {count === 1 ? 'seat' : 'seats'}</span>}
               </dd>
             </div>
-            {show.amount > 0 && <div><dt className="text-xs text-white/60">Ticket price</dt><dd className="num mt-1 font-bold">{formatINR(show.amount)}</dd></div>}
+            {show.amount > 0 && <div><dt className="text-xs text-white/60">Ticket price</dt><dd className="num mt-1 font-bold">{formatCurrency(show.amount, show.currency)}</dd></div>}
           </dl>
         </div>
       </div>

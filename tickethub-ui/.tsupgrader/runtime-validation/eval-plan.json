@@ -1,0 +1,50 @@
+{
+  "generatedOnPlatform": "win32",
+  "projectType": "webapp",
+  "devServer": {
+    "command": "npm",
+    "args": ["run", "dev", "--", "--host", "127.0.0.1", "--port", "4175", "--strictPort"],
+    "url": "http://127.0.0.1:4175/",
+    "readyTimeoutSeconds": 120
+  },
+  "setup": [
+    {
+      "command": "npm",
+      "args": ["install", "--no-audit", "--no-fund"],
+      "timeoutSeconds": 600
+    }
+  ],
+  "assertions": [
+    {
+      "name": "production-build",
+      "kind": "process",
+      "command": "npm",
+      "args": ["run", "build"],
+      "verificationMethod": "exit-code",
+      "expected": "0",
+      "timeoutSeconds": 180
+    },
+    {
+      "name": "tests-pass",
+      "kind": "process",
+      "command": "npm",
+      "args": ["test"],
+      "verificationMethod": "test-results",
+      "expected": "0",
+      "timeoutSeconds": 180
+    },
+    {
+      "name": "mock-api-nowplaying",
+      "kind": "http-probe",
+      "startCommand": "npm",
+      "startArgs": ["run", "mock"],
+      "env": {
+        "PORT": "18082"
+      },
+      "url": "http://127.0.0.1:18082/movie/NowPlaying/type",
+      "verificationMethod": "http-status",
+      "expected": "200",
+      "timeoutSeconds": 60
+    }
+  ]
+}

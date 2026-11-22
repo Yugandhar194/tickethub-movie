@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { downloadTicketPdf, fetchBooking } from '../api/backend';
 import { useAsync } from '../hooks/useAsync';
 import { useAuth } from '../context/AuthContext';
+import { AUTH_API_BASE_URL } from '../config/env';
 import { loadBookingMeta } from '../lib/bookingStore';
 import { bookingCode } from '../lib/format';
 import TicketPass from '../components/movie/TicketPass';
@@ -33,6 +34,10 @@ export default function Ticket() {
   const seats = booking?.seatNumbers?.length ? booking.seatNumbers : loadBookingMeta(bookingId)?.seats || [];
 
   const download = async () => {
+    if (AUTH_API_BASE_URL) {
+      window.print();
+      return;
+    }
     setBusy(true);
     try {
       await saveTicketPdf(bookingId);
@@ -46,6 +51,9 @@ export default function Ticket() {
   if (loading) return <div className="mx-auto max-w-md px-4 py-12"><Skeleton className="h-[560px] w-full rounded-[28px]" /></div>;
   if (error || !booking) {
     return <EmptyState icon={TriangleAlert} title="We could not find this ticket" className="pt-28" action={<Button to="/my-bookings" variant="secondary">My bookings</Button>}>Check the link, or open the ticket from My bookings.</EmptyState>;
+  }
+  if (booking.status === 'PAYMENT_ISSUE') {
+    return <EmptyState icon={TriangleAlert} title="This is not a confirmed ticket" className="pt-28" action={<Button to="/contact" variant="secondary">Contact support</Button>}>Payment was received, but the seat hold could not be confirmed. Do not retry payment.</EmptyState>;
   }
   if (booking.user?.id && user?.id && booking.user.id !== user.id) {
     return <EmptyState icon={TriangleAlert} title="This ticket belongs to another account" className="pt-28" action={<Button to="/">Go home</Button>}>Sign in with the account that made the booking.</EmptyState>;

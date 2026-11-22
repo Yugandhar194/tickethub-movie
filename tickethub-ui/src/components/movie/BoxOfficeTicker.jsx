@@ -31,7 +31,13 @@ export default function BoxOfficeTicker({ data, loading, onRefresh }) {
               </span>
               Box office
             </h2>
-            <p className="mt-1 max-w-xl text-xs leading-relaxed text-mute sm:text-sm">{note || <Skeleton className="h-4 w-80" />}</p>
+            {note ? (
+              <p className="mt-1 max-w-xl text-xs leading-relaxed text-mute sm:text-sm">{note}</p>
+            ) : (
+              <div className="mt-1 max-w-xl">
+                <Skeleton className="h-4 w-80" />
+              </div>
+            )}
           </div>
           {onRefresh && (
             <button onClick={onRefresh} aria-label="Refresh box office" className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-mute transition hover:bg-white/10 hover:text-ink">

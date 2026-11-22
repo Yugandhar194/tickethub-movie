@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
-import { AISLE_AFTER, COLS, ROW_LABELS, TIERS, seatLabel, tierForRow } from '../../config/seatTiers';
-import { cn, formatINR } from '../../lib/format';
+import { AISLE_AFTER, COLS, ROW_LABELS, TIERS, tierForRow } from '../../config/seatTiers';
+import { cn, formatCurrency } from '../../lib/format';
 import { seatPrice } from '../../lib/pricing';
 
 const tierLook = {
@@ -9,7 +9,7 @@ const tierLook = {
   recliner: 'bg-gold/15 border-gold/45 text-gold-soft hover:bg-gold/30',
 };
 
-function Seat({ id, tier, state, selected, price, offset, onToggle }) {
+function Seat({ id, tier, state, selected, price, offset, onToggle, currency }) {
   const occupied = state === 'occupied';
   const held = state === 'held';
   const unavailable = occupied || held;
@@ -18,7 +18,7 @@ function Seat({ id, tier, state, selected, price, offset, onToggle }) {
       type="button"
       disabled={unavailable}
       aria-pressed={selected}
-      aria-label={`Seat ${id}, ${tier.name}, ${formatINR(price)}, ${selected ? 'selected' : unavailable ? (held ? 'held by another customer' : 'taken') : 'available'}`}
+      aria-label={`Seat ${id}, ${tier.name}, ${formatCurrency(price, currency)}, ${selected ? 'selected' : unavailable ? (held ? 'held by another customer' : 'taken') : 'available'}`}
       onClick={() => onToggle(id)}
       whileTap={unavailable ? undefined : { scale: 0.88 }}
       animate={{ scale: selected ? 1.12 : 1 }}
@@ -38,23 +38,34 @@ function Seat({ id, tier, state, selected, price, offset, onToggle }) {
   );
 }
 
-export default function SeatMap({ seatStates, selected, onToggle, basePrice }) {
-  const mid = (COLS - 1) / 2;
+function cinemaSeatTier(type, row) {
+  const value = String(type || '').toLowerCase();
+  if (value.includes('reclin')) return { id: 'recliner', name: 'Recliner', rows: [row], multiplier: 1 };
+  if (value.includes('vip') || value.includes('executive') || value.includes('premium')) {
+    return { id: 'executive', name: 'VIP', rows: [row], multiplier: 1 };
+  }
+  return { id: 'classic', name: 'Standard', rows: [row], multiplier: 1 };
+}
+
+export default function SeatMap({ seatStates, selected, onToggle, basePrice, seatMap, currency = 'INR' }) {
+  const rows = seatMap?.rows?.length
+    ? seatMap.rows
+    : ROW_LABELS.map((row) => ({ row, seats: Array.from({ length: COLS }, (_, i) => ({ number: i + 1, type: tierForRow(row).id })) }));
+  const maxColumns = Math.max(1, ...rows.map((row) => row.seats?.length || 0));
   return (
     <div className="overflow-x-auto pb-2">
       <div className="mx-auto w-fit" style={{ '--seat': 'clamp(16px, 4.5vw, 36px)', perspective: '1100px' }}>
         <div style={{ transform: 'rotateX(12deg)', transformOrigin: '50% 0' }} className="flex flex-col gap-[clamp(5px,1.3vw,10px)]">
-          {ROW_LABELS.map((row) => {
-            const tier = tierForRow(row);
-            const firstOfTier = tier.rows[0] === row;
+          {rows.map((row, rowIndex) => {
             return (
-              <div key={row} className="relative flex items-center justify-center gap-[clamp(2px,0.5vw,6px)]">
-                <span className="absolute -left-6 w-4 text-center text-xs font-bold text-faint" aria-hidden>{row}</span>
-                {Array.from({ length: COLS }, (_, c) => {
-                  const id = seatLabel(row, c);
-                  const d = c - mid;
+              <div key={`${row.row}-${rowIndex}`} className="relative flex items-center justify-center gap-[clamp(2px,0.5vw,6px)]">
+                <span className="absolute -left-6 w-4 text-center text-xs font-bold text-faint" aria-hidden>{row.row}</span>
+                {(row.seats || []).map((seat, colIndex) => {
+                  const id = `${row.row}${seat.number}`;
+                  const tier = cinemaSeatTier(seat.type, row.row);
+                  const d = colIndex - (maxColumns - 1) / 2;
                   return (
-                    <div key={id} className="flex items-center" style={{ marginRight: c + 1 === AISLE_AFTER ? 'clamp(10px,3vw,26px)' : 0 }}>
+                    <div key={id} className="flex items-center" style={{ marginRight: seat.number === AISLE_AFTER ? 'clamp(10px,3vw,26px)' : 0 }}>
                       <Seat
                         id={id}
                         tier={tier}
@@ -63,13 +74,11 @@ export default function SeatMap({ seatStates, selected, onToggle, basePrice }) {
                         price={seatPrice(basePrice, id)}
                         offset={-(d * d) * 0.32}
                         onToggle={onToggle}
+                        currency={currency}
                       />
                     </div>
                   );
                 })}
-                {firstOfTier && (
-                  <span className="absolute -right-2 translate-x-full whitespace-nowrap text-[11px] font-semibold text-faint max-sm:hidden">{tier.name}</span>
-                )}
               </div>
             );
           })}
@@ -79,9 +88,12 @@ export default function SeatMap({ seatStates, selected, onToggle, basePrice }) {
   );
 }
 
-export function SeatLegend({ basePrice, showHeld }) {
+export function SeatLegend({ basePrice, showHeld, seatMap, currency = 'INR' }) {
   const dot = 'inline-block h-4 w-4 rounded-t-md rounded-b-[3px] border';
-  const distinctPrices = new Set(TIERS.map((t) => t.multiplier)).size > 1;
+  const tiers = seatMap?.rows?.length
+    ? [...new Set(seatMap.rows.flatMap((row) => (row.seats || []).map((seat) => String(seat.type || '').toLowerCase())))].map((type) => cinemaSeatTier(type, ''))
+    : TIERS;
+  const distinctPrices = new Set(tiers.map((t) => t.multiplier)).size > 1;
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm text-mute">
       <span className="inline-flex items-center gap-2"><i className={cn(dot, 'border-white/25 bg-white/15')} />Available</span>
@@ -89,11 +101,11 @@ export function SeatLegend({ basePrice, showHeld }) {
       <span className="inline-flex items-center gap-2"><i className={cn(dot, 'border-white/5 bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.12)_0_2px,transparent_2px_4px)]')} />Occupied</span>
       {showHeld && <span className="inline-flex items-center gap-2"><i className={cn(dot, 'border-dashed border-gold/60')} />Locked</span>}
       <span className="hidden h-4 w-px bg-white/10 sm:block" />
-      {TIERS.map((t) => (
+      {tiers.filter((tier, i) => tiers.findIndex((other) => other.id === tier.id) === i).map((t) => (
         <span key={t.id} className="inline-flex items-center gap-2">
           <i className={cn(dot, t.id === 'recliner' ? 'border-gold/45 bg-gold/20' : t.id === 'executive' ? 'border-white/25 bg-white/25' : 'border-white/15 bg-white/10')} />
           {t.name}
-          {distinctPrices && <span className="num text-faint">{formatINR(seatPrice(basePrice, `${t.rows[0]}1`))}</span>}
+          {distinctPrices && <span className="num text-faint">{formatCurrency(seatPrice(basePrice, `${t.rows[0]}1`), currency)}</span>}
         </span>
       ))}
     </div>

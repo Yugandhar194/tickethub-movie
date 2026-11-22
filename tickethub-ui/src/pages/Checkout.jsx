@@ -5,11 +5,11 @@ import { toast } from 'react-toastify';
 import { confirmPayment, createPaymentOrder, errorMessage, fetchBooking } from '../api/backend';
 import { useAsync } from '../hooks/useAsync';
 import { useAuth } from '../context/AuthContext';
-import { RAZORPAY_KEY_ID } from '../config/env';
+import { AUTH_API_BASE_URL, RAZORPAY_KEY_ID } from '../config/env';
 import { FOOD_ITEMS } from '../config/food';
 import { loadBookingMeta, saveBookingMeta } from '../lib/bookingStore';
 import { computeTotals } from '../lib/pricing';
-import { bookingCode, cn, formatDate, formatINR, formatTime } from '../lib/format';
+import { bookingCode, cn, formatCurrency, formatDate, formatTime } from '../lib/format';
 import { img } from '../lib/posters';
 import SmartImage from '../components/ui/SmartImage';
 import Skeleton from '../components/ui/Skeleton';
@@ -37,6 +37,8 @@ export default function Checkout() {
   const [paying, setPaying] = useState(false);
 
   const show = booking?.showtime;
+  const currency = show?.currency || 'INR';
+  const canOrderFood = !AUTH_API_BASE_URL || currency === 'INR';
   const seats = booking?.seatNumbers?.length ? booking.seatNumbers : meta?.seats || [];
   const [now, setNow] = useState(Date.now());
   const remaining = booking?.status === 'PENDING' && booking.expiresAt ? Math.max(0, booking.expiresAt - now) : null;
@@ -61,17 +63,17 @@ export default function Checkout() {
   const pay = async () => {
     setPaying(true);
     try {
-      const order = await createPaymentOrder(bookingId, totals.total);
+      const foodItems = FOOD_ITEMS.filter((f) => qty[f.id]).map((f) => ({ id: f.id, quantity: qty[f.id] }));
+      const order = await createPaymentOrder(bookingId, totals.total, foodItems);
       if (order.mock) {
-        // The backend has no Razorpay keys, so it simulates the payment: confirm straight away.
-        await confirmPayment(order.id, 'mock_payment');
-        toast.success('Payment simulated (no Razorpay keys on the server).');
+        await confirmPayment(bookingId, 'demo_payment');
+        toast.success('Demo payment confirmed. No real charge was made.');
         nav(`/tickets/${bookingId}`, { replace: true, state: { paid: true } });
         return;
       }
       if (!(await loadRazorpay())) throw new Error('The payment window could not load. Check your connection and try again.');
       const rzp = new window.Razorpay({
-        key: RAZORPAY_KEY_ID,
+        key: order.key_id || RAZORPAY_KEY_ID,
         amount: order.amount,
         currency: order.currency,
         name: 'TicketHub',
@@ -82,9 +84,12 @@ export default function Checkout() {
         modal: { ondismiss: () => setPaying(false) },
         handler: async (response) => {
           try {
-            await confirmPayment(order.id, response.razorpay_payment_id, response.razorpay_signature);
-          } catch {
+            await confirmPayment(bookingId, response.razorpay_payment_id, response.razorpay_signature);
+          } catch (verificationError) {
+            toast.error(errorMessage(verificationError, 'Payment could not be verified. Do not retry until you check your booking status.'));
             toast.warn('Payment went through, but we could not record it. Keep this booking ID and contact support.');
+            setPaying(false);
+            return;
           }
           toast.success('Payment received.');
           nav(`/tickets/${bookingId}`, { replace: true, state: { paid: true } });
@@ -115,6 +120,9 @@ export default function Checkout() {
   if (booking.status === 'CONFIRMED') {
     return <EmptyState icon={ShieldCheck} title="This booking is already paid" className="pt-28" action={<Button to={`/tickets/${bookingId}`}>View ticket</Button>}>Your seats are confirmed.</EmptyState>;
   }
+  if (booking.status === 'PAYMENT_ISSUE') {
+    return <EmptyState icon={TriangleAlert} title="Payment needs support" className="pt-28" action={<Button to="/contact" variant="secondary">Contact support</Button>}>Payment was received, but the seat hold could not be confirmed. Do not retry payment.</EmptyState>;
+  }
   if (expired || booking.status === 'CANCELLED') {
     return <EmptyState icon={Clock} title="Your seat hold ended" className="pt-28" action={<Button to="/movies">Choose seats again</Button>}>Seats are held for a few minutes while you pay. Yours were released so others can book them.</EmptyState>;
   }
@@ -130,7 +138,8 @@ export default function Checkout() {
       <div className="mt-8 grid gap-10 lg:grid-cols-[1fr_360px]">
         <section aria-labelledby="fnb">
           <h2 id="fnb" className="mb-4 text-xl font-extrabold">Food and drinks</h2>
-          <ul className="grid gap-4 sm:grid-cols-2">
+          {!canOrderFood && <p className="mb-4 rounded-xl border hairline bg-white/[0.03] p-4 text-sm text-mute">Food prices are not configured for {currency}; you can continue with tickets only.</p>}
+          {canOrderFood && <ul className="grid gap-4 sm:grid-cols-2">
             {FOOD_ITEMS.map((f) => {
               const n = qty[f.id] || 0;
               return (
@@ -138,7 +147,7 @@ export default function Checkout() {
                   <img src={f.image} alt="" loading="lazy" className="h-20 w-20 shrink-0 rounded-xl object-cover" />
                   <div className="min-w-0 flex-1">
                     <h3 className="truncate font-bold">{f.name}</h3>
-                    <p className="num text-sm text-mute">{formatINR(f.price)}</p>
+                    <p className="num text-sm text-mute">{formatCurrency(f.price, currency)}</p>
                   </div>
                   {n === 0 ? (
                     <Button size="sm" variant="secondary" onClick={() => step(f.id, 1)} aria-label={`Add ${f.name}`}>Add</Button>
@@ -152,7 +161,7 @@ export default function Checkout() {
                 </li>
               );
             })}
-          </ul>
+          </ul>}
         </section>
 
         <aside className="glass h-fit rounded-panel p-6 lg:sticky lg:top-24" aria-label="Order summary">
@@ -166,11 +175,11 @@ export default function Checkout() {
           </div>
           {seats.length > 0 && <p className="num mt-4 text-sm"><span className="text-mute">Seats </span><span className="font-bold">{seats.join(', ')}</span></p>}
           <dl className="num mt-5 space-y-2 border-t hairline pt-4 text-sm">
-            <div className="flex justify-between"><dt className="text-mute">Tickets ({booking.noOfSeat})</dt><dd>{formatINR(totals.tickets)}</dd></div>
-            {totals.food > 0 && <div className="flex justify-between"><dt className="text-mute">Food and drinks</dt><dd>{formatINR(totals.food)}</dd></div>}
-            {totals.fee > 0 && <div className="flex justify-between"><dt className="text-mute">Convenience fee</dt><dd>{formatINR(totals.fee)}</dd></div>}
-            {totals.tax > 0 && <div className="flex justify-between"><dt className="text-mute">Taxes</dt><dd>{formatINR(totals.tax)}</dd></div>}
-            <div className="flex justify-between border-t hairline pt-3 text-xl font-extrabold"><dt>Total</dt><dd>{formatINR(totals.total)}</dd></div>
+            <div className="flex justify-between"><dt className="text-mute">Tickets ({booking.noOfSeat})</dt><dd>{formatCurrency(totals.tickets, currency)}</dd></div>
+            {totals.food > 0 && <div className="flex justify-between"><dt className="text-mute">Food and drinks</dt><dd>{formatCurrency(totals.food, currency)}</dd></div>}
+            {totals.fee > 0 && <div className="flex justify-between"><dt className="text-mute">Convenience fee</dt><dd>{formatCurrency(totals.fee, currency)}</dd></div>}
+            {totals.tax > 0 && <div className="flex justify-between"><dt className="text-mute">Taxes</dt><dd>{formatCurrency(totals.tax, currency)}</dd></div>}
+            <div className="flex justify-between border-t hairline pt-3 text-xl font-extrabold"><dt>Total</dt><dd>{formatCurrency(totals.total, currency)}</dd></div>
           </dl>
           {remaining !== null && (
             <p className="num mt-5 flex items-center justify-between rounded-xl bg-white/[0.05] px-4 py-2.5 text-sm" role="timer">
@@ -178,8 +187,8 @@ export default function Checkout() {
               <span className={remaining < 60000 ? 'font-bold text-crimson-soft' : 'font-bold'}>{String(Math.floor(remaining / 60000)).padStart(2, '0')}:{String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0')}</span>
             </p>
           )}
-          <Button size="lg" className="mt-6 w-full" loading={paying} onClick={pay}>Pay {formatINR(totals.total)}</Button>
-          <p className="mt-4 flex items-start gap-2 text-xs leading-relaxed text-faint"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />Payments are handled by Razorpay. Your seats are reserved for this booking.</p>
+          <Button size="lg" className="mt-6 w-full" loading={paying} onClick={pay}>Pay {formatCurrency(totals.total, currency)}</Button>
+          <p className="mt-4 flex items-start gap-2 text-xs leading-relaxed text-faint"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />{AUTH_API_BASE_URL ? 'Your seat hold is checked and confirmed by Cinehold after payment verification.' : 'Payments are handled by Razorpay. Your seats are reserved for this booking.'}</p>
           <p className="mt-3 text-center text-xs text-faint">Changed your mind? <Link to="/my-bookings" className="font-semibold text-mute underline underline-offset-4">Manage this booking</Link></p>
         </aside>
       </div>

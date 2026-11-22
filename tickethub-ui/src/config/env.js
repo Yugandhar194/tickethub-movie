@@ -6,6 +6,7 @@ export const BACKEND = (env.VITE_BACKEND || 'spring').toLowerCase() === 'dotnet'
 export const API_BASE = (
   env.VITE_API_BASE_URL || (BACKEND === 'dotnet' ? 'http://localhost:5266' : 'http://localhost:8080')
 ).replace(/\/$/, '');
+export const AUTH_API_BASE_URL = (env.VITE_AUTH_API_BASE_URL || '').trim().replace(/\/$/, '');
 
 export const TMDB_KEY = (env.VITE_TMDB_API_KEY || '').trim();
 export const TMDB_REGION = env.VITE_TMDB_REGION || 'IN';
