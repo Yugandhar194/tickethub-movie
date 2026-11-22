@@ -30,6 +30,8 @@ const languageName = (code) => {
 
 function Select({ label, value, onChange, children, active }) {
   const [open, setOpen] = useState(false);
+  const [alignRight, setAlignRight] = useState(false);
+  const [openUp, setOpenUp] = useState(false);
   const root = useRef(null);
   const options = Children.toArray(children)
     .filter((child) => child?.props)
@@ -43,15 +45,24 @@ function Select({ label, value, onChange, children, active }) {
     const closeOnEscape = (event) => {
       if (event.key === 'Escape') setOpen(false);
     };
-    document.addEventListener('mousedown', closeOutside);
+    document.addEventListener('pointerdown', closeOutside);
     document.addEventListener('keydown', closeOnEscape);
     return () => {
-      document.removeEventListener('mousedown', closeOutside);
+      document.removeEventListener('pointerdown', closeOutside);
       document.removeEventListener('keydown', closeOnEscape);
     };
   }, [open]);
 
   const selected = options.find((option) => String(option.value) === String(value));
+  const toggle = () => {
+    if (!open && root.current) {
+      const bounds = root.current.getBoundingClientRect();
+      setAlignRight(bounds.left + 260 > window.innerWidth - 12);
+      const spaceBelow = window.innerHeight - bounds.bottom;
+      setOpenUp(spaceBelow < 280 && bounds.top > spaceBelow);
+    }
+    setOpen((current) => !current);
+  };
 
   return (
     <div ref={root} className="relative shrink-0">
@@ -61,7 +72,7 @@ function Select({ label, value, onChange, children, active }) {
         aria-label={label}
         aria-haspopup="listbox"
         aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
+        onClick={toggle}
         className={cn(
           'inline-flex h-10 max-w-[220px] cursor-pointer items-center gap-2 rounded-full border bg-white/[0.05] pl-4 pr-3 text-sm font-semibold transition hover:bg-white/[0.09] focus:outline-none focus-visible:ring-2 focus-visible:ring-gold',
           active ? 'border-gold/60 text-gold-soft' : 'hairline text-ink'
@@ -74,7 +85,11 @@ function Select({ label, value, onChange, children, active }) {
         <div
           role="listbox"
           aria-label={label}
-          className="glass absolute left-0 top-[calc(100%+8px)] z-50 min-w-[180px] max-w-[260px] overflow-hidden rounded-2xl p-1.5 shadow-lift"
+          className={cn(
+            'glass absolute z-50 max-h-[60dvh] min-w-[180px] max-w-[260px] overflow-y-auto overflow-x-hidden rounded-2xl p-1.5 shadow-lift sm:max-h-80',
+            openUp ? 'bottom-[calc(100%+8px)]' : 'top-[calc(100%+8px)]',
+            alignRight ? 'right-0' : 'left-0'
+          )}
         >
           {options.map((option) => {
             const isSelected = String(option.value) === String(value);
@@ -109,7 +124,7 @@ export default function FilterBar({ filters, setFilters, genres, languages, tota
   const dirty = JSON.stringify(filters) !== JSON.stringify(DEFAULT_FILTERS);
   return (
     <div className="mb-8">
-      <div className="no-scrollbar -mx-4 flex items-center gap-2.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+      <div className="-mx-4 flex flex-wrap items-center gap-2.5 px-4 pb-1 sm:mx-0 sm:px-0">
         <Select label="Genre" value={filters.genre} onChange={(genre) => set({ genre })} active={Boolean(filters.genre)}>
           <option value="">All genres</option>
           {genres.map((g) => <option key={g} value={g}>{g}</option>)}

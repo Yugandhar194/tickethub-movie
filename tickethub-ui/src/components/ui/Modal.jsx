@@ -50,7 +50,7 @@ export default function Modal({ open, onClose, title, size = 'md', children, cla
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
             className={cn(
               cn(
-                'relative z-10 flex max-h-[92vh] w-full flex-col overflow-hidden outline-none',
+                'relative z-10 flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden outline-none sm:max-h-[92vh]',
                 centered ? 'rounded-panel' : 'rounded-t-[24px] sm:rounded-panel'
               ),
               bare ? '' : 'glass shadow-lift',

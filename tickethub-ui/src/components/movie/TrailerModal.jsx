@@ -3,7 +3,17 @@ import Modal from '../ui/Modal';
 
 export default function TrailerModal({ open, onClose, trailerKey, title, loading }) {
   return (
-    <Modal open={open} onClose={onClose} title={`${title || 'Movie'} trailer`} size="xl" bare centered closeOnBackdrop={false} floatingCloseButton>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={`${title || 'Movie'} trailer`}
+      size="xl"
+      bare
+      centered
+      closeOnBackdrop={false}
+      floatingCloseButton
+      className="!max-w-[min(100%,calc((100dvh_-_7rem)_*_16_/_9))]"
+    >
       <div className="overflow-hidden rounded-panel bg-black shadow-lift">
         <div className="relative aspect-video w-full">
           {trailerKey ? (

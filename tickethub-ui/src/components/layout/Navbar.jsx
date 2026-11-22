@@ -118,8 +118,8 @@ export default function Navbar({ overlay }) {
         solid ? 'glass border-x-0 border-t-0' : 'border-b border-transparent bg-gradient-to-b from-black/70 to-transparent'
       )}
     >
-      <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-6 px-4 sm:px-8">
-        <Logo />
+      <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-2 px-3 sm:gap-6 sm:px-8">
+        <Logo className="shrink-0 gap-2" />
         <nav aria-label="Primary" className="hidden items-center gap-1 md:flex">
           {links.map((l) => (
             <NavLink
@@ -145,14 +145,14 @@ export default function Navbar({ overlay }) {
             className="h-10 w-full rounded-full border border-white/10 bg-white/[0.06] pl-10 pr-4 text-sm placeholder:text-faint focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20"
           />
         </form>
-        <div className="ml-auto flex items-center gap-3 md:ml-0">
-          <Link to="/search" aria-label="Search" className="grid h-10 w-10 place-items-center rounded-full text-mute hover:bg-white/10 hover:text-ink md:hidden">
+        <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-3 md:ml-0">
+          <Link to="/search" aria-label="Search" className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-mute hover:bg-white/10 hover:text-ink md:hidden">
             <Search className="h-5 w-5" />
           </Link>
           {user ? (
             <UserMenu />
           ) : (
-            <Button to="/login" size="sm" className="h-10">
+            <Button to="/login" size="sm" className="h-9 max-[359px]:px-2 max-[359px]:text-xs">
               Sign in
             </Button>
           )}
