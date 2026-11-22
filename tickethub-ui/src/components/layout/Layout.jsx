@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import BottomNav from './BottomNav';
@@ -11,9 +11,14 @@ const isBleed = (p) => p === '/' || /^\/movies\/[^/]+$/.test(p);
 const hideTabs = (p) => /^\/(book|checkout)\//.test(p);
 
 export default function Layout() {
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   const bleed = isBleed(pathname);
   const tabs = !hideTabs(pathname);
+
+  useEffect(() => {
+    if (!hash) window.scrollTo(0, 0);
+  }, [pathname, hash]);
+
   return (
     <div className="flex min-h-screen w-full min-w-0 flex-col overflow-x-clip">
       <a href="#main" className="sr-only z-[100] rounded-lg bg-gold px-4 py-2 font-bold text-obsidian focus:not-sr-only focus:fixed focus:left-4 focus:top-4">

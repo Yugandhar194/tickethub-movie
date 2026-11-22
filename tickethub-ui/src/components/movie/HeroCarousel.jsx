@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Pause, Play, Ticket } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pause, Play, Ticket } from 'lucide-react';
 import SmartImage from '../ui/SmartImage';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
@@ -122,6 +122,27 @@ export default function HeroCarousel({ slides, loading }) {
           </motion.div>
         </AnimatePresence>
       </motion.div>
+
+      {count > 1 && (
+        <>
+          <button
+            type="button"
+            onClick={() => go(index - 1)}
+            aria-label="Previous featured movie"
+            className="glass absolute left-2 top-1/2 z-20 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full text-ink shadow-lift transition hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-gold sm:left-4 sm:h-12 sm:w-12"
+          >
+            <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />
+          </button>
+          <button
+            type="button"
+            onClick={() => go(index + 1)}
+            aria-label="Next featured movie"
+            className="glass absolute right-2 top-1/2 z-20 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full text-ink shadow-lift transition hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-gold sm:right-4 sm:h-12 sm:w-12"
+          >
+            <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />
+          </button>
+        </>
+      )}
 
       <div className="absolute inset-x-0 bottom-8 md:bottom-9">
         <div className="mx-auto flex max-w-[1400px] items-center gap-4 px-4 sm:px-8">
