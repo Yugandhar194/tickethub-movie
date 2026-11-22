@@ -15,12 +15,12 @@ export default function Layout() {
   const bleed = isBleed(pathname);
   const tabs = !hideTabs(pathname);
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen w-full min-w-0 flex-col overflow-x-clip">
       <a href="#main" className="sr-only z-[100] rounded-lg bg-gold px-4 py-2 font-bold text-obsidian focus:not-sr-only focus:fixed focus:left-4 focus:top-4">
         Skip to content
       </a>
       <Navbar overlay={bleed} />
-      <main id="main" className={`flex-1 ${bleed ? '' : 'pt-16'} ${tabs ? 'pb-20 md:pb-0' : ''}`}>
+      <main id="main" className={`min-w-0 flex-1 ${bleed ? '' : 'pt-16'} ${tabs ? 'pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0' : ''}`}>
         <Suspense
           fallback={
             <div className="mx-auto max-w-[1400px] space-y-4 px-4 py-10 sm:px-8">

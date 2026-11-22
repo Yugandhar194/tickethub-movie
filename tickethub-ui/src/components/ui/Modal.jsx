@@ -29,7 +29,7 @@ export default function Modal({ open, onClose, title, size = 'md', children, cla
       {open && (
         <motion.div
           className={cn(
-            'fixed inset-0 z-[80] flex justify-center',
+            'fixed inset-0 z-[80] flex h-[100dvh] w-screen justify-center',
             centered ? 'items-center p-4 sm:p-6' : 'items-end p-0 sm:items-center sm:p-6'
           )}
           initial={{ opacity: 0 }}

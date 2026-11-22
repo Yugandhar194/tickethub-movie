@@ -7,11 +7,15 @@
     color-scheme: dark;
     background: #09090b;
     -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+    overflow-x: clip;
   }
   body {
     @apply bg-obsidian font-sans text-ink antialiased;
     font-feature-settings: 'cv11', 'ss01';
     min-height: 100vh;
+    overflow-x: hidden;
+    overflow-x: clip;
   }
   h1, h2, h3, h4 { letter-spacing: -0.02em; }
   ::selection { background: rgba(225, 29, 72, 0.55); color: #fff; }

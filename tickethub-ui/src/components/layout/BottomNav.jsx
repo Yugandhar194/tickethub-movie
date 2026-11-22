@@ -14,15 +14,15 @@ export default function BottomNav() {
     { to: user && !staff ? '/account' : '/login', label: user ? 'Account' : 'Sign in', icon: User },
   ];
   return (
-    <nav aria-label="Mobile" className="glass no-print fixed inset-x-0 bottom-0 z-40 border-x-0 border-b-0 pb-[env(safe-area-inset-bottom)] md:hidden">
-      <ul className="mx-auto grid max-w-md grid-cols-5">
+    <nav aria-label="Mobile" className="glass no-print fixed bottom-0 left-0 z-50 w-screen min-w-0 border-x-0 border-b-0 pb-[env(safe-area-inset-bottom)] md:hidden">
+      <ul className="mx-auto grid min-h-16 max-w-md grid-cols-5">
         {items.map(({ to, label, icon: Icon, end }) => (
           <li key={label}>
             <NavLink
               to={to}
               end={end}
               className={({ isActive }) =>
-                cn('flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold transition', isActive ? 'text-crimson-soft' : 'text-faint')
+                cn('flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-[11px] font-semibold transition', isActive ? 'text-crimson-soft' : 'text-faint')
               }
             >
               <Icon className="h-5 w-5" aria-hidden />

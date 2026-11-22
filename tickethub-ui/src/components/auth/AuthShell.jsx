@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Home } from 'lucide-react';
 import Logo from '../ui/Logo';
 import SmartImage from '../ui/SmartImage';
 import { getNowPlaying } from '../../api/catalog';
@@ -36,7 +38,13 @@ export default function AuthShell({ title, subtitle, children, footer }) {
         </div>
       </aside>
       <main className="flex flex-col px-6 py-8 sm:px-12">
-        <Logo />
+        <div className="flex items-center justify-between gap-3">
+          <Logo className="shrink-0" />
+          <Link to="/" className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full border hairline px-3 text-sm font-semibold text-mute transition hover:bg-white/[0.06] hover:text-ink">
+            <Home className="h-4 w-4" aria-hidden />
+            Home
+          </Link>
+        </div>
         <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-10">
           <div className="glass rounded-panel p-7 shadow-lift sm:p-9">
             <h1 className="text-2xl font-extrabold">{title}</h1>
