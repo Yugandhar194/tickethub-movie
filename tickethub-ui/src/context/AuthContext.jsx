@@ -16,13 +16,15 @@ const read = () => {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(read);
 
-  const login = useCallback((profile) => {
+  const login = useCallback((profile, token) => {
+    if (token) sessionStorage.setItem('th_token', token);
     sessionStorage.setItem(KEY, JSON.stringify(profile));
     setUser(profile);
   }, []);
 
   const logout = useCallback(() => {
     sessionStorage.removeItem(KEY);
+    sessionStorage.removeItem('th_token');
     setUser(null);
   }, []);
 

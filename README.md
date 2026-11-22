@@ -143,10 +143,31 @@ TicketHub can be deployed to any static host that serves Vite builds. Configure 
 ## 🔌 Data and backend notes
 
 - Movie discovery prefers TMDB when configured, then uses the TicketHub API, with sample data as an offline fallback.
-- Booking, seat availability, account and payment actions require a compatible backend.
+- Booking, seat availability, account and payment actions require a compatible backend. `tickethub-api` is one that is included.
 - The included mock API is for local UI exploration only; it is in-memory and does not provide production persistence or real payment processing.
 - The .NET backend contract currently supports only part of the booking experience; the Spring backend is the complete integration.
 - TMDB movie data is provided by TMDB. TicketHub is not endorsed or certified by TMDB.
+
+### Bundled backend (`tickethub-api`)
+
+A Node.js (Express and SQLite) backend that matches the API the UI calls. Nothing to install besides Node 18.17 or newer: no database server, no mail server, no keys.
+
+```bash
+# terminal 1
+cd tickethub-api
+npm install
+npm start            # http://localhost:8080
+
+# terminal 2
+cd tickethub-ui
+npm install
+cp .env.example .env # add your TMDB key
+npm run dev          # http://localhost:5173
+```
+
+Demo accounts are created on first start: `user@tickethub.test` / `User@1234`, `owner@tickethub.test` / `Owner@123`, `admin@tickethub.test` / `Admin@123`. Sign-in uses a one-time code, which the backend prints in its terminal in development.
+
+The two apps are linked by `VITE_API_BASE_URL` in `tickethub-ui/.env` (default `http://localhost:8080`) and `CORS_ORIGINS` in `tickethub-api/.env` (default `http://localhost:5173`). For live films you can book, put the same TMDB key in both `.env` files; the backend imports the films and schedules showtimes for them. See `tickethub-api/README.md` for endpoints, seat locking, payments and going live.
 
 ---
 

@@ -38,8 +38,8 @@ export default function Login() {
       return;
     }
     try {
-      await verifyOtp({ email: profile.email, otp: values.otp.trim() });
-      login(profile);
+      const res = await verifyOtp({ email: profile.email, otp: values.otp.trim() });
+      login(profile, res?.token);
       toast.success('Welcome back.');
       nav(state?.from || homeFor(profile), { replace: true });
     } catch (e) {

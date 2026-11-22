@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Minus, Plus, ShieldCheck, TriangleAlert } from 'lucide-react';
+import { Clock, Minus, Plus, ShieldCheck, TriangleAlert } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { confirmPayment, createPaymentOrder, errorMessage, fetchBooking } from '../api/backend';
 import { useAsync } from '../hooks/useAsync';
@@ -37,10 +37,19 @@ export default function Checkout() {
   const [paying, setPaying] = useState(false);
 
   const show = booking?.showtime;
-  const seats = meta?.seats || [];
+  const seats = booking?.seatNumbers?.length ? booking.seatNumbers : meta?.seats || [];
+  const [now, setNow] = useState(Date.now());
+  const remaining = booking?.status === 'PENDING' && booking.expiresAt ? Math.max(0, booking.expiresAt - now) : null;
+  const expired = remaining === 0 || booking?.status === 'EXPIRED';
   const base = Number(show?.amount) || 0;
   const foodTotal = FOOD_ITEMS.reduce((sum, f) => sum + f.price * (qty[f.id] || 0), 0);
   const totals = computeTotals({ seats: seats.length ? seats : Array.from({ length: booking?.noOfSeat || 0 }, (_, i) => `A${i + 1}`), basePrice: base, fnb: foodTotal });
+
+  useEffect(() => {
+    if (remaining === null) return undefined;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [remaining === null]);
 
   useEffect(() => {
     if (booking && meta) saveBookingMeta(bookingId, { ...meta, food: FOOD_ITEMS.filter((f) => qty[f.id]).map((f) => ({ name: f.name, qty: qty[f.id], price: f.price })) });
@@ -52,8 +61,15 @@ export default function Checkout() {
   const pay = async () => {
     setPaying(true);
     try {
-      if (!(await loadRazorpay())) throw new Error('The payment window could not load. Check your connection and try again.');
       const order = await createPaymentOrder(bookingId, totals.total);
+      if (order.mock) {
+        // The backend has no Razorpay keys, so it simulates the payment: confirm straight away.
+        await confirmPayment(order.id, 'mock_payment');
+        toast.success('Payment simulated (no Razorpay keys on the server).');
+        nav(`/tickets/${bookingId}`, { replace: true, state: { paid: true } });
+        return;
+      }
+      if (!(await loadRazorpay())) throw new Error('The payment window could not load. Check your connection and try again.');
       const rzp = new window.Razorpay({
         key: RAZORPAY_KEY_ID,
         amount: order.amount,
@@ -66,7 +82,7 @@ export default function Checkout() {
         modal: { ondismiss: () => setPaying(false) },
         handler: async (response) => {
           try {
-            await confirmPayment(order.id, response.razorpay_payment_id);
+            await confirmPayment(order.id, response.razorpay_payment_id, response.razorpay_signature);
           } catch {
             toast.warn('Payment went through, but we could not record it. Keep this booking ID and contact support.');
           }
@@ -95,6 +111,12 @@ export default function Checkout() {
   }
   if (error || !booking) {
     return <EmptyState icon={TriangleAlert} title="We could not load this booking" className="pt-28" action={<Button to="/my-bookings" variant="secondary">My bookings</Button>}>It may have been cancelled, or the link is wrong.</EmptyState>;
+  }
+  if (booking.status === 'CONFIRMED') {
+    return <EmptyState icon={ShieldCheck} title="This booking is already paid" className="pt-28" action={<Button to={`/tickets/${bookingId}`}>View ticket</Button>}>Your seats are confirmed.</EmptyState>;
+  }
+  if (expired || booking.status === 'CANCELLED') {
+    return <EmptyState icon={Clock} title="Your seat hold ended" className="pt-28" action={<Button to="/movies">Choose seats again</Button>}>Seats are held for a few minutes while you pay. Yours were released so others can book them.</EmptyState>;
   }
   if (booking.user?.id && user?.id && booking.user.id !== user.id) {
     return <EmptyState icon={TriangleAlert} title="This booking belongs to another account" className="pt-28" action={<Button to="/">Go home</Button>}>Sign in with the account that made the booking to pay for it.</EmptyState>;
@@ -150,6 +172,12 @@ export default function Checkout() {
             {totals.tax > 0 && <div className="flex justify-between"><dt className="text-mute">Taxes</dt><dd>{formatINR(totals.tax)}</dd></div>}
             <div className="flex justify-between border-t hairline pt-3 text-xl font-extrabold"><dt>Total</dt><dd>{formatINR(totals.total)}</dd></div>
           </dl>
+          {remaining !== null && (
+            <p className="num mt-5 flex items-center justify-between rounded-xl bg-white/[0.05] px-4 py-2.5 text-sm" role="timer">
+              <span className="inline-flex items-center gap-2 text-mute"><Clock className="h-4 w-4" aria-hidden />Seats held for</span>
+              <span className={remaining < 60000 ? 'font-bold text-crimson-soft' : 'font-bold'}>{String(Math.floor(remaining / 60000)).padStart(2, '0')}:{String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0')}</span>
+            </p>
+          )}
           <Button size="lg" className="mt-6 w-full" loading={paying} onClick={pay}>Pay {formatINR(totals.total)}</Button>
           <p className="mt-4 flex items-start gap-2 text-xs leading-relaxed text-faint"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />Payments are handled by Razorpay. Your seats are reserved for this booking.</p>
           <p className="mt-3 text-center text-xs text-faint">Changed your mind? <Link to="/my-bookings" className="font-semibold text-mute underline underline-offset-4">Manage this booking</Link></p>

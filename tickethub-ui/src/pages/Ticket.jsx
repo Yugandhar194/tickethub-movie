@@ -1,4 +1,4 @@
-import { useParams, useLocation } from 'react-router-dom';
+import { Link, useParams, useLocation } from 'react-router-dom';
 import { CheckCircle2, Download, Printer, TriangleAlert } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { downloadTicketPdf, fetchBooking } from '../api/backend';
@@ -30,7 +30,7 @@ export default function Ticket() {
   const { user } = useAuth();
   const { data: booking, loading, error } = useAsync(() => fetchBooking(bookingId), [bookingId]);
   const [busy, setBusy] = useState(false);
-  const seats = loadBookingMeta(bookingId)?.seats || [];
+  const seats = booking?.seatNumbers?.length ? booking.seatNumbers : loadBookingMeta(bookingId)?.seats || [];
 
   const download = async () => {
     setBusy(true);
@@ -61,6 +61,11 @@ export default function Ticket() {
         </div>
       )}
       {!state?.paid && <h1 className="no-print mb-8 text-center text-2xl font-extrabold">Your ticket</h1>}
+      {booking.status === 'PENDING' && (
+        <div role="status" className="no-print mb-6 rounded-2xl border border-gold/30 bg-gold/[0.07] p-4 text-sm text-gold-soft">
+          Payment is still pending, so this is not a valid ticket yet. <Link to={`/checkout/${booking.id}`} className="font-bold underline underline-offset-4">Complete payment</Link>
+        </div>
+      )}
       <TicketPass booking={booking} seats={seats} />
       <div className="no-print mt-8 grid grid-cols-2 gap-3">
         <Button variant="secondary" onClick={download} loading={busy}><Download className="h-4 w-4" aria-hidden />Download PDF</Button>

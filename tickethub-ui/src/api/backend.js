@@ -3,6 +3,26 @@ import { API_BASE, BACKEND } from '../config/env';
 
 const http = axios.create({ baseURL: API_BASE, timeout: 15000 });
 
+// The backend issues a token after the one-time code is verified; it is sent on every request.
+export const TOKEN_KEY = 'th_token';
+http.interceptors.request.use((config) => {
+  const token = sessionStorage.getItem(TOKEN_KEY);
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+// A token that has expired mid-session sends the person back to sign in instead of failing silently.
+http.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err?.response?.status === 401 && sessionStorage.getItem(TOKEN_KEY) && !/\/(signin|user\/verifyOTP)/.test(err.config?.url || '')) {
+      sessionStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem('user_details');
+      window.location.assign('/login');
+    }
+    return Promise.reject(err);
+  }
+);
+
 // Route tables for the two backends that live in the repo. Spring is the complete one.
 const routes = {
   spring: {
@@ -71,10 +91,10 @@ export async function createPaymentOrder(bookingId, amount) {
   if (typeof data === 'string') {
     return { id: data, amount: Math.round(amount * 100), currency: 'INR' };
   }
-  return { id: data.id, amount: data.amount, currency: data.currency || 'INR' };
+  return { id: data.id, amount: data.amount, currency: data.currency || 'INR', mock: Boolean(data.mock) };
 }
-export const confirmPayment = (orderId, transactionId) =>
-  http.post(r.paySuccess, null, { params: { orderId, transactionId } });
+export const confirmPayment = (orderId, transactionId, signature) =>
+  http.post(r.paySuccess, null, { params: { orderId, transactionId, signature } });
 
 // ── Auth and users ─────────────────────────────────────────────────────────
 export async function signIn(credentials) {

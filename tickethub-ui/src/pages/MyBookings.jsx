@@ -74,7 +74,8 @@ export default function MyBookings() {
         {list.map((b) => {
           const s = b.showtime || {};
           const m = s.movie || {};
-          const seats = loadBookingMeta(b.id)?.seats || [];
+          const seats = b.seatNumbers?.length ? b.seatNumbers : loadBookingMeta(b.id)?.seats || [];
+          const pending = b.status === 'PENDING';
           const canCancel = tab === 'upcoming' && b.start && b.start.getTime() - Date.now() > 2 * HOURS;
           return (
             <article key={b.id} className="flex gap-4 rounded-panel border hairline bg-white/[0.03] p-4 sm:gap-6 sm:p-5">
@@ -85,12 +86,16 @@ export default function MyBookings() {
                     <h2 className="truncate text-lg font-extrabold">{m.title}</h2>
                     <p className="truncate text-sm text-mute">{s.theater?.name}{s.theater?.location ? `, ${s.theater.location}` : ''}</p>
                   </div>
-                  <span className="num shrink-0 text-xs text-faint">{bookingCode(b.id)}</span>
+                  <span className="num shrink-0 text-xs text-faint">{pending ? 'Awaiting payment' : bookingCode(b.id)}</span>
                 </div>
                 <p className="num mt-2 text-sm"><span className="font-semibold">{formatDate(s.date, { weekday: 'short', day: 'numeric', month: 'short' })}</span>, {formatTime(s.time)}</p>
                 <p className="num mt-1 text-sm text-mute">{seats.length ? seats.join(', ') : `${b.noOfSeat} ${b.noOfSeat === 1 ? 'seat' : 'seats'}`}{s.amount ? ` · ${formatINR(s.amount * b.noOfSeat)}` : ''}</p>
                 <div className="mt-auto flex flex-wrap gap-2 pt-4">
-                  <Button size="sm" variant="secondary" onClick={() => setPass(b)}><QrCode className="h-4 w-4" aria-hidden />Show pass</Button>
+                  {pending ? (
+                    <Button size="sm" to={`/checkout/${b.id}`}>Pay to confirm</Button>
+                  ) : (
+                    <Button size="sm" variant="secondary" onClick={() => setPass(b)}><QrCode className="h-4 w-4" aria-hidden />Show pass</Button>
+                  )}
                   {canCancel && <Button size="sm" variant="danger" onClick={() => setCancelling(b)}>Cancel booking</Button>}
                 </div>
               </div>
@@ -103,7 +108,7 @@ export default function MyBookings() {
         {pass && (
           <div className="relative">
             <button onClick={() => setPass(null)} aria-label="Close" className="absolute right-3 top-3 z-10 grid h-9 w-9 place-items-center rounded-full bg-black/50 backdrop-blur hover:bg-black/70"><X className="h-5 w-5" /></button>
-            <div className="max-h-[92vh] overflow-y-auto"><TicketPass booking={pass} seats={loadBookingMeta(pass.id)?.seats || []} /></div>
+            <div className="max-h-[92vh] overflow-y-auto"><TicketPass booking={pass} seats={pass.seatNumbers?.length ? pass.seatNumbers : loadBookingMeta(pass.id)?.seats || []} /></div>
             <div className="mt-3 text-center"><Link to={`/tickets/${pass.id}`} onClick={() => setPass(null)} className="text-sm font-semibold text-ink underline underline-offset-4">Open full ticket page</Link></div>
           </div>
         )}

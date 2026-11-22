@@ -173,6 +173,8 @@ export default function SeatSelection() {
       nav(`/checkout/${bookingId}`, { replace: true });
     } catch (e) {
       toast.error(errorMessage(e, 'We could not create your booking. Please try again.'));
+      setTerms(false);
+      loadSeats();
     } finally {
       setBusy(false);
     }
