@@ -1,0 +1,160 @@
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Minus, Plus, ShieldCheck, TriangleAlert } from 'lucide-react';
+import { toast } from 'react-toastify';
+import { confirmPayment, createPaymentOrder, errorMessage, fetchBooking } from '../api/backend';
+import { useAsync } from '../hooks/useAsync';
+import { useAuth } from '../context/AuthContext';
+import { RAZORPAY_KEY_ID } from '../config/env';
+import { FOOD_ITEMS } from '../config/food';
+import { loadBookingMeta, saveBookingMeta } from '../lib/bookingStore';
+import { computeTotals } from '../lib/pricing';
+import { bookingCode, cn, formatDate, formatINR, formatTime } from '../lib/format';
+import { img } from '../lib/posters';
+import SmartImage from '../components/ui/SmartImage';
+import Skeleton from '../components/ui/Skeleton';
+import Button from '../components/ui/Button';
+import EmptyState from '../components/ui/EmptyState';
+
+function loadRazorpay() {
+  if (window.Razorpay) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const s = document.createElement('script');
+    s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.body.appendChild(s);
+  });
+}
+
+export default function Checkout() {
+  const { bookingId } = useParams();
+  const nav = useNavigate();
+  const { user } = useAuth();
+  const { data: booking, loading, error } = useAsync(() => fetchBooking(bookingId), [bookingId]);
+  const meta = useMemo(() => loadBookingMeta(bookingId), [bookingId]);
+  const [qty, setQty] = useState({});
+  const [paying, setPaying] = useState(false);
+
+  const show = booking?.showtime;
+  const seats = meta?.seats || [];
+  const base = Number(show?.amount) || 0;
+  const foodTotal = FOOD_ITEMS.reduce((sum, f) => sum + f.price * (qty[f.id] || 0), 0);
+  const totals = computeTotals({ seats: seats.length ? seats : Array.from({ length: booking?.noOfSeat || 0 }, (_, i) => `A${i + 1}`), basePrice: base, fnb: foodTotal });
+
+  useEffect(() => {
+    if (booking && meta) saveBookingMeta(bookingId, { ...meta, food: FOOD_ITEMS.filter((f) => qty[f.id]).map((f) => ({ name: f.name, qty: qty[f.id], price: f.price })) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qty]);
+
+  const step = (id, d) => setQty((q) => ({ ...q, [id]: Math.max(0, Math.min(10, (q[id] || 0) + d)) }));
+
+  const pay = async () => {
+    setPaying(true);
+    try {
+      if (!(await loadRazorpay())) throw new Error('The payment window could not load. Check your connection and try again.');
+      const order = await createPaymentOrder(bookingId, totals.total);
+      const rzp = new window.Razorpay({
+        key: RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'TicketHub',
+        description: `Booking ${bookingCode(bookingId)}`,
+        order_id: order.id,
+        prefill: { name: user?.name, email: user?.email, contact: user?.phone },
+        theme: { color: '#E11D48' },
+        modal: { ondismiss: () => setPaying(false) },
+        handler: async (response) => {
+          try {
+            await confirmPayment(order.id, response.razorpay_payment_id);
+          } catch {
+            toast.warn('Payment went through, but we could not record it. Keep this booking ID and contact support.');
+          }
+          toast.success('Payment received.');
+          nav(`/tickets/${bookingId}`, { replace: true, state: { paid: true } });
+        },
+      });
+      rzp.on?.('payment.failed', (r) => {
+        toast.error(r?.error?.description || 'The payment failed. You have not been charged.');
+        setPaying(false);
+      });
+      rzp.open();
+    } catch (e) {
+      toast.error(errorMessage(e, 'We could not start the payment.'));
+      setPaying(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-[1100px] space-y-4 px-4 py-10 sm:px-8">
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-72 w-full rounded-panel" />
+      </div>
+    );
+  }
+  if (error || !booking) {
+    return <EmptyState icon={TriangleAlert} title="We could not load this booking" className="pt-28" action={<Button to="/my-bookings" variant="secondary">My bookings</Button>}>It may have been cancelled, or the link is wrong.</EmptyState>;
+  }
+  if (booking.user?.id && user?.id && booking.user.id !== user.id) {
+    return <EmptyState icon={TriangleAlert} title="This booking belongs to another account" className="pt-28" action={<Button to="/">Go home</Button>}>Sign in with the account that made the booking to pay for it.</EmptyState>;
+  }
+
+  return (
+    <div className="mx-auto max-w-[1100px] px-4 pb-16 pt-8 sm:px-8">
+      <h1 className="text-3xl font-extrabold">Checkout</h1>
+      <p className="mt-1 text-mute">Booking <span className="num font-semibold text-ink">{bookingCode(bookingId)}</span>. Add snacks, then pay to confirm your seats.</p>
+
+      <div className="mt-8 grid gap-10 lg:grid-cols-[1fr_360px]">
+        <section aria-labelledby="fnb">
+          <h2 id="fnb" className="mb-4 text-xl font-extrabold">Food and drinks</h2>
+          <ul className="grid gap-4 sm:grid-cols-2">
+            {FOOD_ITEMS.map((f) => {
+              const n = qty[f.id] || 0;
+              return (
+                <li key={f.id} className={cn('flex items-center gap-4 rounded-2xl border p-3 transition', n ? 'border-gold/40 bg-gold/[0.06]' : 'hairline bg-white/[0.03]')}>
+                  <img src={f.image} alt="" loading="lazy" className="h-20 w-20 shrink-0 rounded-xl object-cover" />
+                  <div className="min-w-0 flex-1">
+                    <h3 className="truncate font-bold">{f.name}</h3>
+                    <p className="num text-sm text-mute">{formatINR(f.price)}</p>
+                  </div>
+                  {n === 0 ? (
+                    <Button size="sm" variant="secondary" onClick={() => step(f.id, 1)} aria-label={`Add ${f.name}`}>Add</Button>
+                  ) : (
+                    <div className="flex items-center gap-1 rounded-lg bg-white/10 p-1" role="group" aria-label={`${f.name} quantity`}>
+                      <button onClick={() => step(f.id, -1)} aria-label={`Remove one ${f.name}`} className="grid h-8 w-8 place-items-center rounded-md hover:bg-white/10"><Minus className="h-4 w-4" /></button>
+                      <span className="num w-5 text-center text-sm font-bold" aria-live="polite">{n}</span>
+                      <button onClick={() => step(f.id, 1)} aria-label={`Add one more ${f.name}`} className="grid h-8 w-8 place-items-center rounded-md hover:bg-white/10"><Plus className="h-4 w-4" /></button>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+
+        <aside className="glass h-fit rounded-panel p-6 lg:sticky lg:top-24" aria-label="Order summary">
+          <div className="flex gap-4">
+            <SmartImage src={img(show?.movie?.poster_path, 'w154')} title={show?.movie?.title} className="h-24 w-16 shrink-0 rounded-lg" />
+            <div className="min-w-0">
+              <h2 className="font-extrabold leading-snug">{show?.movie?.title}</h2>
+              <p className="mt-1 text-sm text-mute">{show?.theater?.name}</p>
+              <p className="num text-sm text-mute">{formatDate(show?.date, { weekday: 'short', day: 'numeric', month: 'short' })}, {formatTime(show?.time)}</p>
+            </div>
+          </div>
+          {seats.length > 0 && <p className="num mt-4 text-sm"><span className="text-mute">Seats </span><span className="font-bold">{seats.join(', ')}</span></p>}
+          <dl className="num mt-5 space-y-2 border-t hairline pt-4 text-sm">
+            <div className="flex justify-between"><dt className="text-mute">Tickets ({booking.noOfSeat})</dt><dd>{formatINR(totals.tickets)}</dd></div>
+            {totals.food > 0 && <div className="flex justify-between"><dt className="text-mute">Food and drinks</dt><dd>{formatINR(totals.food)}</dd></div>}
+            {totals.fee > 0 && <div className="flex justify-between"><dt className="text-mute">Convenience fee</dt><dd>{formatINR(totals.fee)}</dd></div>}
+            {totals.tax > 0 && <div className="flex justify-between"><dt className="text-mute">Taxes</dt><dd>{formatINR(totals.tax)}</dd></div>}
+            <div className="flex justify-between border-t hairline pt-3 text-xl font-extrabold"><dt>Total</dt><dd>{formatINR(totals.total)}</dd></div>
+          </dl>
+          <Button size="lg" className="mt-6 w-full" loading={paying} onClick={pay}>Pay {formatINR(totals.total)}</Button>
+          <p className="mt-4 flex items-start gap-2 text-xs leading-relaxed text-faint"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />Payments are handled by Razorpay. Your seats are reserved for this booking.</p>
+          <p className="mt-3 text-center text-xs text-faint">Changed your mind? <Link to="/my-bookings" className="font-semibold text-mute underline underline-offset-4">Manage this booking</Link></p>
+        </aside>
+      </div>
+    </div>
+  );
+}
