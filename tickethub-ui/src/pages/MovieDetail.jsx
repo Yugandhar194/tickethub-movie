@@ -11,7 +11,6 @@ import EmptyState from '../components/ui/EmptyState';
 import SectionHeader from '../components/ui/SectionHeader';
 import ScoreRing from '../components/movie/ScoreRing';
 import CastCarousel from '../components/movie/CastCarousel';
-import TrailerEmbed from '../components/movie/TrailerEmbed';
 import TrailerModal from '../components/movie/TrailerModal';
 import useTrailer from '../components/movie/useTrailer';
 import PosterRow from '../components/movie/PosterRow';
@@ -177,13 +176,6 @@ export default function MovieDetail() {
             <p className="mt-5 border-t hairline pt-4 text-xs text-faint">Figures come from TMDB and can trail trade reports.</p>
           </aside>
         </section>
-
-        {movie.trailerKey && (
-          <section aria-labelledby="tr-title" className="max-w-4xl">
-            <h2 id="tr-title" className="mb-4 text-xl font-extrabold">Trailer</h2>
-            <TrailerEmbed trailerKey={movie.trailerKey} title={movie.title} backdrop={movie.backdrop} paused={trailer.open} />
-          </section>
-        )}
 
         {movie.cast?.length > 0 && (
           <section>

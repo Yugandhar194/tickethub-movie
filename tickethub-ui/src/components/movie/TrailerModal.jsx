@@ -19,10 +19,9 @@ export default function TrailerModal({ open, onClose, trailerKey, title, loading
           {trailerKey ? (
             <iframe
               className="absolute inset-0 h-full w-full"
-              src={`https://www.youtube-nocookie.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
+              src={`https://www.youtube-nocookie.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1&playsinline=1&fs=0`}
               title={`${title} trailer`}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; web-share"
             />
           ) : (
             <div className="absolute inset-0 grid place-items-center text-center text-mute">
