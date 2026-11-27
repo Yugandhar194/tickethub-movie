@@ -39,9 +39,14 @@ export default function accountRoutes({ db, cfg, auth }) {
 
   r.post('/signin', wrap(async (req, res) => {
     const { email, password } = req.body || {};
+    const loginKey = `password:${String(email || '').trim().toLowerCase()}`;
+    if (auth.tooMany(loginKey, cfg.signinLimit, 15 * 60000)) throw new ApiError(429, 'Too many sign-in attempts. Try again in a few minutes.');
     const acc = auth.findAccount(email);
     // Same message for an unknown email and a wrong password.
-    if (!acc || !checkPassword(password, acc.row.password_hash)) throw new ApiError(401, 'Invalid email or password.');
+    if (!acc || !checkPassword(password, acc.row.password_hash)) {
+      auth.note(loginKey);
+      throw new ApiError(401, 'Invalid email or password.');
+    }
     const sent = await auth.issueOtp(acc.row.email);
     const body = { message: sent.message, timeStamp: new Date().toISOString() };
     if (acc.kind === 'user') body.user = userView(acc.row);
