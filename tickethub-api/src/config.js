@@ -25,7 +25,7 @@ export function loadConfig(overrides = {}) {
     // "console" prints the OTP in the server log and returns it in the sign-in response (local development only).
     // It switches to "smtp" automatically when SMTP_HOST is set.
     otpMode: env.SMTP_HOST ? 'smtp' : (env.OTP_MODE || 'console'),
-    seedDemo: env.SEED_DEMO !== 'false',
+    seedDemo: env.SEED_DEMO === undefined ? env.NODE_ENV !== 'production' : env.SEED_DEMO === 'true',
     autoSchedule: env.AUTO_SCHEDULE !== 'false',
     signinLimit: num(env.SIGNIN_LIMIT, 8), // sign-in attempts per email per 15 minutes
     seats: { rows: 'ABCDEFGH', cols: 14, max: 8 },
