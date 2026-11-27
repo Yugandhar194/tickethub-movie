@@ -9,7 +9,7 @@ npm install
 npm start          # http://localhost:8080
 ```
 
-Needs Node 18.17 or newer. No database server, no mail server, no keys. The first start creates `data/tickethub.db`, three demo accounts, ten sample films and seven days of showtimes. `npm test` runs 15 end-to-end tests.
+Requires Node.js 22.x (the version pinned for Vercel and native SQLite compatibility). No database server, no mail server, no keys. The first start creates `data/tickethub.db`, three demo accounts, ten sample films and seven days of showtimes. `npm test` runs 15 end-to-end tests.
 
 Demo accounts (printed on first start):
 
@@ -44,6 +44,6 @@ Admin: `GET /user/getAllUsers`, `/theaterowner/getAllUsers`, `/movies` (TMDB imp
 
 ## Going live
 
-Set `NODE_ENV=production`, a random `JWT_SECRET` of at least 32 characters, `SMTP_HOST`/`SMTP_USER`/`SMTP_PASS`, real Razorpay keys, `CORS_ORIGINS`, `FRONTEND_URL`, and `SEED_DEMO=false`. Set `GOOGLE_CLIENT_ID` to your Google OAuth Web client ID. For WhatsApp, configure `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_GRAPH_VERSION` (default `v24.0`) and an approved `WHATSAPP_TEMPLATE_NAME`. The approved template must use exactly five body parameters in this order: booking code, movie title, show date/time, seats, total amount. The customer must have a valid phone number saved in their profile. The API sends this template automatically after verified payment; do not call Meta from the browser. Keep `CONVENIENCE_FEE_PCT` and `GST_PCT` in sync with the matching frontend `VITE_` values. Never commit `.env` files or provider secrets. Put the API behind HTTPS.
+Set `NODE_ENV=production`, a random `JWT_SECRET` of at least 32 characters, `SMTP_HOST`/`SMTP_USER`/`SMTP_PASS`, matching Razorpay keys, `CORS_ORIGINS` (include the exact deployed UI origin), `FRONTEND_URL` (the deployed UI origin), and `SEED_DEMO=false`. Set `GOOGLE_CLIENT_ID` to your Google OAuth Web client ID. For WhatsApp, configure `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_GRAPH_VERSION` (default `v24.0`) and an approved `WHATSAPP_TEMPLATE_NAME`. The approved template must use exactly five body parameters in this order: booking code, movie title, show date/time, seats, total amount. The customer must have a valid phone number saved in their profile. The API sends this template automatically after verified payment; do not call Meta from the browser. Keep `CONVENIENCE_FEE_PCT` and `GST_PCT` in sync with the matching frontend `VITE_` values. Never commit `.env` files or provider secrets. Put the API behind HTTPS.
 
 SQLite suits a single server. For several servers, move to Postgres or MySQL.
