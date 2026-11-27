@@ -66,7 +66,7 @@ export default function Checkout() {
       const foodItems = FOOD_ITEMS.filter((f) => qty[f.id]).map((f) => ({ id: f.id, quantity: qty[f.id] }));
       const order = await createPaymentOrder(bookingId, totals.total, foodItems);
       if (order.mock) {
-        await confirmPayment(bookingId, 'demo_payment');
+        await confirmPayment(order.id, 'demo_payment');
         toast.success('Demo payment confirmed. No real charge was made.');
         nav(`/tickets/${bookingId}`, { replace: true, state: { paid: true } });
         return;
@@ -84,7 +84,8 @@ export default function Checkout() {
         modal: { ondismiss: () => setPaying(false) },
         handler: async (response) => {
           try {
-            await confirmPayment(bookingId, response.razorpay_payment_id, response.razorpay_signature);
+            // The API finds the pending booking through its persisted gateway order ID.
+            await confirmPayment(order.id, response.razorpay_payment_id, response.razorpay_signature);
           } catch (verificationError) {
             toast.error(errorMessage(verificationError, 'Payment could not be verified. Do not retry until you check your booking status.'));
             toast.warn('Payment went through, but we could not record it. Keep this booking ID and contact support.');
