@@ -9,7 +9,7 @@ npm install
 npm start          # http://localhost:8080
 ```
 
-Needs Node 18.17 or newer. No database server, no mail server, no keys. The first start creates `data/tickethub.db`, three demo accounts, ten sample films and seven days of showtimes. `npm test` runs 14 end-to-end tests.
+Needs Node 18.17 or newer. No database server, no mail server, no keys. The first start creates `data/tickethub.db`, three demo accounts, ten sample films and seven days of showtimes. `npm test` runs 15 end-to-end tests.
 
 Demo accounts (printed on first start):
 
