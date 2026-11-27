@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS bookings (
   id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   showtime_id INTEGER NOT NULL REFERENCES showtimes(id) ON DELETE CASCADE, no_of_seat INTEGER NOT NULL,
   booking_date TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'PENDING', expires_at INTEGER, amount_total REAL NOT NULL,
-  order_id TEXT, order_amount REAL, payment_id TEXT, paid_at TEXT, created_at INTEGER NOT NULL, seats_json TEXT);
+  order_id TEXT, order_amount REAL, payment_id TEXT, paid_at TEXT, created_at INTEGER NOT NULL, seats_json TEXT, food_json TEXT DEFAULT '[]', food_total REAL DEFAULT 0);
 CREATE INDEX IF NOT EXISTS idx_bookings_user ON bookings(user_id);
 CREATE TABLE IF NOT EXISTS booked_seats (
   id INTEGER PRIMARY KEY AUTOINCREMENT, booking_id INTEGER NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
@@ -48,5 +48,9 @@ export function openDb(file) {
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
   db.exec(SCHEMA);
+  // Forward-only, idempotent migrations for databases created by earlier TicketHub versions.
+  const bookingColumns = new Set(db.pragma('table_info(bookings)').map((column) => column.name));
+  if (!bookingColumns.has('food_json')) db.exec("ALTER TABLE bookings ADD COLUMN food_json TEXT DEFAULT '[]'");
+  if (!bookingColumns.has('food_total')) db.exec('ALTER TABLE bookings ADD COLUMN food_total REAL DEFAULT 0');
   return db;
 }

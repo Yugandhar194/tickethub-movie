@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
-import { errorMessage, signIn, verifyOtp } from '../api/backend';
-import { AUTH_API_BASE_URL } from '../config/env';
+import { errorMessage, signIn, signInWithGoogle, verifyOtp } from '../api/backend';
+import { AUTH_API_BASE_URL, GOOGLE_CLIENT_ID } from '../config/env';
 import { homeFor, useAuth } from '../context/AuthContext';
 import AuthShell from '../components/auth/AuthShell';
 import PasswordInput from '../components/auth/PasswordInput';
@@ -21,6 +21,45 @@ export default function Login() {
   const [creds, setCreds] = useState(null);
   const [otpNotice, setOtpNotice] = useState('');
   const [channel, setChannel] = useState('email');
+  const googleButton = useRef(null);
+
+  useEffect(() => {
+    if (step !== 1 || !GOOGLE_CLIENT_ID || !googleButton.current) return undefined;
+    let disposed = false;
+    const renderGoogleButton = () => {
+      if (disposed || !window.google?.accounts?.id || !googleButton.current) return;
+      googleButton.current.innerHTML = '';
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: async ({ credential }) => {
+          try {
+            const result = await signInWithGoogle(credential);
+            login(result.user, result.token);
+            toast.success('Signed in with Google.');
+            nav(state?.from || homeFor(result.user), { replace: true });
+          } catch (e) {
+            toast.error(errorMessage(e, 'Google sign-in failed. Please try again.'));
+          }
+        },
+      });
+      window.google.accounts.id.renderButton(googleButton.current, { theme: 'outline', size: 'large', shape: 'rectangular', text: 'continue_with', width: 320 });
+    };
+    let script = document.querySelector('script[data-google-identity]');
+    if (!script) {
+      script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.dataset.googleIdentity = 'true';
+      script.addEventListener('load', renderGoogleButton, { once: true });
+      document.head.appendChild(script);
+    } else if (window.google?.accounts?.id) {
+      renderGoogleButton();
+    } else {
+      script.addEventListener('load', renderGoogleButton, { once: true });
+    }
+    return () => { disposed = true; };
+  }, [step, login, nav, state?.from]);
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm({ defaultValues: { email: state?.email || '' } });
 
   if (user) return <Navigate to={state?.from || homeFor(user)} replace />;
@@ -84,6 +123,7 @@ export default function Login() {
               {!AUTH_API_BASE_URL && <p className="mt-1 text-xs text-mute">WhatsApp is available when the Cinehold OTP API is configured.</p>}
             </Field>
             <Button type="submit" size="lg" className="w-full" loading={isSubmitting}>Send one-time code</Button>
+            {GOOGLE_CLIENT_ID && <div className="pt-2"><div className="mb-3 flex items-center gap-3 text-xs text-faint"><span className="h-px flex-1 bg-white/10" />OR CONTINUE WITH<span className="h-px flex-1 bg-white/10" /></div><div ref={googleButton} className="flex justify-center" /></div>}
           </>
         ) : (
           <>

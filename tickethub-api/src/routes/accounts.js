@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { Router } from 'express';
 import { ApiError, EMAIL_RE, wrap } from '../util.js';
 import { adminView, ownerView, userView } from '../views.js';
@@ -6,11 +7,49 @@ import { checkPassword, hashPassword } from '../auth.js';
 export default function accountRoutes({ db, cfg, auth }) {
   const r = Router();
 
+  // Google Identity Services sends a signed ID token. Verify it with Google's tokeninfo
+  // endpoint and enforce this application's configured OAuth client ID before trusting the email.
+  r.post('/auth/google', wrap(async (req, res) => {
+    if (!cfg.googleClientId) throw new ApiError(503, 'Google sign-in is not configured on this server.');
+    const credential = String(req.body?.credential || '');
+    if (!credential || credential.length > 10000) throw new ApiError(400, 'A valid Google credential is required.');
+    let claims;
+    try {
+      const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`, { signal: AbortSignal.timeout(10000) });
+      claims = await response.json();
+      if (!response.ok) throw new Error('Google rejected the credential.');
+    } catch {
+      throw new ApiError(401, 'Google sign-in could not be verified. Please try again.');
+    }
+    const issuerOk = ['accounts.google.com', 'https://accounts.google.com'].includes(claims.iss);
+    if (!issuerOk || claims.aud !== cfg.googleClientId || claims.email_verified !== 'true' || !claims.email) {
+      throw new ApiError(401, 'Google sign-in could not be verified for this application.');
+    }
+    const email = String(claims.email).trim().toLowerCase();
+    let account = auth.findAccount(email);
+    if (account && account.kind !== 'user') throw new ApiError(403, 'Use your staff sign-in to access this account.');
+    if (!account) {
+      const name = String(claims.name || claims.given_name || email.split('@')[0]).trim().slice(0, 100);
+      const passwordHash = hashPassword(crypto.randomBytes(48).toString('hex'));
+      const id = db.prepare('INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)').run(name, email, passwordHash).lastInsertRowid;
+      account = { kind: 'user', row: db.prepare('SELECT * FROM users WHERE id = ?').get(id) };
+    }
+    res.json({ message: 'Google sign-in successful.', token: auth.sign(account.row), user: userView(account.row) });
+  }));
+
   r.post('/signin', wrap(async (req, res) => {
     const { email, password } = req.body || {};
+    const loginKey = `password:${String(email || '').trim().toLowerCase()}`;
+    if (auth.tooMany(loginKey, cfg.signinLimit, 15 * 60000)) throw new ApiError(429, 'Too many sign-in attempts. Try again in a few minutes.');
     const acc = auth.findAccount(email);
     // Same message for an unknown email and a wrong password.
-    if (!acc || !checkPassword(password, acc.row.password_hash)) throw new ApiError(401, 'Invalid email or password.');
+    if (!acc || !checkPassword(password, acc.row.password_hash)) {
+      auth.note(loginKey);
+      throw new ApiError(401, 'Invalid email or password.');
+    }
+    if (process.env.NODE_ENV === 'production' && (cfg.otpMode !== 'smtp' || !cfg.smtp.user || !cfg.smtp.pass)) {
+      throw new ApiError(503, 'Email sign-in is temporarily unavailable because SMTP is not configured on the server.');
+    }
     const sent = await auth.issueOtp(acc.row.email);
     const body = { message: sent.message, timeStamp: new Date().toISOString() };
     if (acc.kind === 'user') body.user = userView(acc.row);

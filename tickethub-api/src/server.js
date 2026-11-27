@@ -5,6 +5,14 @@ import { SEED_ACCOUNTS, ensureSchedule, seedAccounts, seedSampleMovies } from '.
 import { syncFromTmdb } from './tmdb.js';
 
 const cfg = loadConfig();
+
+// Refuse unsafe demo defaults in production instead of silently issuing weak tokens or fake payments.
+if (process.env.NODE_ENV === 'production') {
+  if (cfg.jwtSecret === 'dev-only-secret-change-me' || cfg.jwtSecret.length < 32) {
+    throw new Error('Production requires a strong JWT_SECRET (at least 32 characters).');
+  }
+
+}
 const db = openDb(cfg.dbFile);
 const { app, svc } = createApp(db, cfg);
 

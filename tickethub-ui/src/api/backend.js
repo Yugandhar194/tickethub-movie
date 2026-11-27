@@ -185,12 +185,12 @@ export async function createPaymentOrder(bookingId, amount, foodItems = []) {
       key_id: data.key_id,
     };
   }
-  const { data } = await http.post(r.payCreate, null, { params: { bookingId, amount } });
+  const { data } = await http.post(r.payCreate, { bookingId, foodItems });
   if (!data) throw new Error('Could not create the payment order.');
   if (typeof data === 'string') {
     return { id: data, amount: Math.round(amount * 100), currency: 'INR' };
   }
-  return { id: data.id, amount: data.amount, currency: data.currency || 'INR', mock: Boolean(data.mock) };
+  return { id: data.id, amount: data.amount, currency: data.currency || 'INR', mock: Boolean(data.mock), key_id: data.key_id };
 }
 export const confirmPayment = (orderId, transactionId, signature) =>
   AUTH_API_BASE_URL
@@ -201,6 +201,8 @@ export const confirmPayment = (orderId, transactionId, signature) =>
     : http.post(r.paySuccess, null, { params: { orderId, transactionId, signature } });
 
 // ── Auth and users ─────────────────────────────────────────────────────────
+export const signInWithGoogle = (credential) => http.post('/auth/google', { credential }).then((x) => x.data);
+
 export async function signIn(credentials) {
   const { data } = await authHttp.post(AUTH_API_BASE_URL ? '/api/auth/login' : r.signin, credentials);
   const profile = data?.user || data?.theaterOwner || data?.admin || null;

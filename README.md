@@ -43,6 +43,7 @@ The interface combines a cinematic dark palette, responsive layouts, touch-frien
 - **Axios** for API communication
 - **TMDB** movie discovery data, with optional **OMDb** ratings
 - **Razorpay** checkout integration through the backend
+- Optional Google Identity Services sign-in, SMTP booking emails and Meta WhatsApp Cloud API confirmations
 
 ## 🚀 Get started
 
@@ -94,6 +95,7 @@ Set values in `.env` before starting Vite. Values prefixed with `VITE_` are incl
 |---|---|---|
 | `VITE_BACKEND` | API contract to use: `spring` or `dotnet` | `spring` |
 | `VITE_API_BASE_URL` | TicketHub API origin | `http://localhost:8080` |
+| `VITE_GOOGLE_CLIENT_ID` | Google Identity Services Web client ID (must match the API) | Empty |
 | `VITE_TMDB_API_KEY` | Live movie listings, details and trailers | Empty |
 | `VITE_TMDB_REGION` | Movie region | `IN` |
 | `VITE_TMDB_LANGUAGE` | Movie language | `en-US` |
@@ -167,7 +169,7 @@ npm run dev          # http://localhost:5173
 
 Demo accounts are created on first start: `user@tickethub.test` / `User@1234`, `owner@tickethub.test` / `Owner@123`, `admin@tickethub.test` / `Admin@123`. Sign-in uses a one-time code, which the backend prints in its terminal in development.
 
-The two apps are linked by `VITE_API_BASE_URL` in `tickethub-ui/.env` (default `http://localhost:8080`) and `CORS_ORIGINS` in `tickethub-api/.env` (default `http://localhost:5173`). For live films you can book, put the same TMDB key in both `.env` files; the backend imports the films and schedules showtimes for them. See `tickethub-api/README.md` for endpoints, seat locking, payments and going live.
+The two apps are linked by `VITE_API_BASE_URL` in `tickethub-ui/.env` (default `http://localhost:8080`) and `CORS_ORIGINS` in `tickethub-api/.env` (default `http://localhost:5173`). For live films you can book, put the same TMDB key in both `.env` files; the backend imports the films and schedules showtimes for them. See `tickethub-api/README.md` for endpoints, seat locking, server-priced food orders, Google sign-in, email/WhatsApp confirmations, payments and production setup.
 
 ---
 
