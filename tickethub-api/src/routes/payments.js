@@ -3,6 +3,7 @@ import { Router } from 'express';
 import QRCode from 'qrcode';
 import PDFDocument from 'pdfkit';
 import { ApiError, wrap } from '../util.js';
+import { sendWhatsAppTemplate } from '../notifications.js';
 
 const code = (id) => `TH-${String(id).padStart(6, '0')}`;
 const FOOD_CATALOG = Object.freeze({
@@ -57,40 +58,26 @@ async function sendBookingNotifications({ auth, cfg, booking, user, showtime, se
     }
   }
 
-  if (cfg.whatsapp?.token && cfg.whatsapp?.phoneNumberId && user.phone) {
-    const digits = String(user.phone).replace(/\D/g, '');
-    const recipient = digits.length === 10 ? `91${digits}` : digits;
-    if (recipient.length >= 10 && recipient.length <= 15) {
-      try {
-        const response = await fetch(`https://graph.facebook.com/${cfg.whatsapp.graphVersion}/${cfg.whatsapp.phoneNumberId}/messages`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${cfg.whatsapp.token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messaging_product: 'whatsapp',
-            to: recipient,
-            type: 'template',
-            template: {
-              name: cfg.whatsapp.template,
-              language: { code: 'en_US' },
-              components: [{ type: 'body', parameters: [
-                { type: 'text', text: bookingCode },
-                { type: 'text', text: movie },
-                { type: 'text', text: when },
-                { type: 'text', text: seats.join(', ') },
-                { type: 'text', text: `INR ${Number(total).toFixed(2)}` },
-              ] }],
-            },
-          }),
-          signal: AbortSignal.timeout(10000),
-        });
-        if (!response.ok) {
-          const data = await response.json().catch(() => ({}));
-          console.error('[notifications] WhatsApp delivery failed:', data?.error?.message || response.statusText);
-        }
-      } catch (error) {
-        console.error('[notifications] WhatsApp delivery failed:', error.message);
-      }
+  try {
+    const result = await sendWhatsAppTemplate({
+      ...cfg.whatsapp,
+      phone: user.phone,
+      parameters: [
+        bookingCode,
+        movie,
+        when,
+        seats.join(', '),
+        `INR ${Number(total).toFixed(2)}`,
+      ],
+    });
+    if (result.skipped) {
+      console.info('[notifications] WhatsApp skipped:', result.reason);
+    } else {
+      console.info('[notifications] WhatsApp accepted:', result.messageId || 'message accepted');
     }
+  } catch (error) {
+    // Payment is already verified and committed. A provider outage must not roll it back.
+    console.error('[notifications] WhatsApp delivery failed:', error.message);
   }
 }
 
