@@ -24,8 +24,11 @@ Sign-in is two steps: password, then a 6-digit code. In development the code is 
 ## What it does that the Spring backend did not
 
 - **Real seat locks.** Choosing seats and continuing creates a pending booking that holds them for `SEAT_HOLD_MINUTES`. The seat map shows them as locked to everyone else, and they are released automatically if payment does not arrive. A unique constraint makes double booking impossible; losing the race returns `409`.
-- **Server-side pricing.** The ticket total comes from the showtime price. The browser can add food on top but can never pay less.
-- **Payment checks.** With Razorpay keys the payment signature is verified; a booking is only confirmed after that.
+- **Server-side pricing.** Ticket prices come from the booking; food is accepted only as catalogue IDs and bounded quantities, then priced on the server. Client-submitted totals are ignored. Convenience-fee and GST percentages are configured on the server.
+- **Payment checks.** With Razorpay keys the payment signature is verified; a booking is only confirmed after that. Confirmation is idempotent and the downloadable PDF reflects the paid order total.
+- **Google sign-in.** `POST /auth/google` verifies the Google ID token and audience against `GOOGLE_CLIENT_ID`; it never trusts browser-supplied profile fields.
+- **Booking notifications.** Successful payments can send a confirmation email through SMTP and an approved WhatsApp Cloud API template. Delivery failures are logged but do not undo a verified payment.
+- **Production guardrails.** `NODE_ENV=production` refuses the demo JWT secret, mock payments, console OTP mode and seeded demo accounts.
 - **Login tokens and roles.** Customers see only their own bookings; owners see only their theaters; admin routes need an admin. Passwords are bcrypt hashes and are never returned.
 - **Seat labels, status and expiry** are returned on bookings, so tickets show seats on any device.
 - **Admin tools:** add theaters, owners and showtimes (`/admin/...`), import from TMDB (`GET /movies`), and automatic showtime scheduling.
@@ -33,7 +36,7 @@ Sign-in is two steps: password, then a 6-digit code. In development the code is 
 
 ## Endpoints
 
-Public: `GET /movie/:type/type` (NowPlaying, Trending, Upcoming, Popular), `/movie/:id`, `/movie/:id/cast`, `/movie/search?title=`, `/showtimes/movie/:id`, `/showtimes/:id`, `/booked-seats/showtime/:id`, `POST /signin`, `/user/verifyOTP`, `/user/signup`, `GET /user/validateEmail`, `/user/validatePhone`, `POST /contact/send`, `GET /health`.
+Public: `POST /auth/google` (Google Identity Services ID token), `GET /movie/:type/type` (NowPlaying, Trending, Upcoming, Popular), `/movie/:id`, `/movie/:id/cast`, `/movie/search?title=`, `/showtimes/movie/:id`, `/showtimes/:id`, `/booked-seats/showtime/:id`, `POST /signin`, `/user/verifyOTP`, `/user/signup`, `GET /user/validateEmail`, `/user/validatePhone`, `POST /contact/send`, `GET /health`.
 
 Signed in: `POST /bookings/create`, `GET /bookings/:id`, `/bookings/user/:id`, `DELETE /bookings/deleteUser/:id` (cancel), `POST /api/payments/create`, `/api/payments/success`, `GET /tickets/download/:id`, `PUT /user/updateUser/:id`.
 
@@ -41,6 +44,6 @@ Admin: `GET /user/getAllUsers`, `/theaterowner/getAllUsers`, `/movies` (TMDB imp
 
 ## Going live
 
-Set `JWT_SECRET`, `SMTP_*` (otherwise anyone can read sign-in codes), real Razorpay keys, `CORS_ORIGINS` and `FRONTEND_URL`, and `SEED_DEMO=false`. Delete or change the demo accounts. Put it behind HTTPS.
+Set `NODE_ENV=production`, a random `JWT_SECRET` of at least 32 characters, `SMTP_HOST`/`SMTP_USER`/`SMTP_PASS`, real Razorpay keys, `CORS_ORIGINS`, `FRONTEND_URL`, and `SEED_DEMO=false`. Set `GOOGLE_CLIENT_ID` to your Google OAuth Web client ID. For WhatsApp, configure `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` and an approved `WHATSAPP_TEMPLATE_NAME` with five body parameters (booking code, movie, date/time, seats, amount). Keep `CONVENIENCE_FEE_PCT` and `GST_PCT` in sync with the matching frontend `VITE_` values. Never commit `.env` files or provider secrets. Put the API behind HTTPS.
 
 SQLite suits a single server. For several servers, move to Postgres or MySQL.
