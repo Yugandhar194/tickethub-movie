@@ -201,7 +201,9 @@ export const confirmPayment = (orderId, transactionId, signature) =>
     : http.post(r.paySuccess, null, { params: { orderId, transactionId, signature } });
 
 // ── Auth and users ─────────────────────────────────────────────────────────
-export const signInWithGoogle = (credential) => http.post('/auth/google', { credential }).then((x) => x.data);\n\nexport async function signIn(credentials) {
+export const signInWithGoogle = (credential) => http.post('/auth/google', { credential }).then((x) => x.data);
+
+export async function signIn(credentials) {
   const { data } = await authHttp.post(AUTH_API_BASE_URL ? '/api/auth/login' : r.signin, credentials);
   const profile = data?.user || data?.theaterOwner || data?.admin || null;
   return { message: data?.message, profile, token: data?.token };
