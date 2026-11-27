@@ -5,6 +5,16 @@ import { SEED_ACCOUNTS, ensureSchedule, seedAccounts, seedSampleMovies } from '.
 import { syncFromTmdb } from './tmdb.js';
 
 const cfg = loadConfig();
+
+// Refuse unsafe demo defaults in production instead of silently issuing weak tokens or fake payments.
+if (process.env.NODE_ENV === 'production') {
+  if (cfg.jwtSecret === 'dev-only-secret-change-me' || cfg.jwtSecret.length < 32) {
+    throw new Error('Production requires a strong JWT_SECRET (at least 32 characters).');
+  }
+  if (cfg.paymentMode !== 'razorpay') throw new Error('Production requires both RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET.');
+  if (cfg.otpMode !== 'smtp') throw new Error('Production requires SMTP_HOST so sign-in codes are not exposed in API responses or logs.');
+  if (cfg.seedDemo) throw new Error('Set SEED_DEMO=false in production to disable demo accounts and sample data.');
+}
 const db = openDb(cfg.dbFile);
 const { app, svc } = createApp(db, cfg);
 
