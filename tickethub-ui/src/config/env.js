@@ -3,9 +3,16 @@ const env = import.meta.env;
 
 export const BACKEND = (env.VITE_BACKEND || 'spring').toLowerCase() === 'dotnet' ? 'dotnet' : 'spring';
 
-export const API_BASE = (
-  env.VITE_API_BASE_URL || (BACKEND === 'dotnet' ? 'http://localhost:5266' : (env.PROD ? 'https://tickethub-api-iota.vercel.app' : 'http://localhost:8080'))
-).replace(/\/$/, '');
+const configuredApiBase = (env.VITE_API_BASE_URL || '').trim();
+const isLocalApiOrigin = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(configuredApiBase);
+
+// A Vite VITE_* value is compiled into the bundle. If Vercel accidentally has a
+// localhost value configured, never ship browser requests back to the visitor's computer.
+const resolvedApiBase = env.PROD && isLocalApiOrigin
+  ? (BACKEND === 'dotnet' ? 'http://localhost:5266' : 'https://tickethub-api-iota.vercel.app')
+  : (configuredApiBase || (BACKEND === 'dotnet' ? 'http://localhost:5266' : (env.PROD ? 'https://tickethub-api-iota.vercel.app' : 'http://localhost:8080')));
+
+export const API_BASE = resolvedApiBase.replace(/\/$/, '');
 export const AUTH_API_BASE_URL = (env.VITE_AUTH_API_BASE_URL || '').trim().replace(/\/$/, '');
 export const GOOGLE_CLIENT_ID = (env.VITE_GOOGLE_CLIENT_ID || '').trim();
 
