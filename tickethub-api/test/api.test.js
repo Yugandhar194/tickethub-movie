@@ -107,6 +107,7 @@ test('payment: price is enforced on the server, then the ticket PDF is available
   const total = show.amount * 3;
 
   assert.equal((await t.api('POST', `/api/payments/create?bookingId=${id}`, { token: a.token, body: { foodItems: [{ id: 999, quantity: 1 }] } })).status, 400, 'unknown food IDs are rejected');
+  assert.equal((await t.api('POST', `/api/payments/create?bookingId=${id}`, { token: a.token, body: { foodItems: [{ id: 1, quantity: 99 }] } })).status, 400, 'food quantities are bounded');
   assert.equal((await t.api('POST', `/api/payments/create?bookingId=${id}`, { body: { foodItems: [] } })).status, 401);
   assert.equal((await t.api('GET', `/tickets/download/${id}`, { token: a.token })).status, 402, 'no ticket before payment');
 
@@ -186,6 +187,14 @@ test('profile edits never touch the password', async () => {
   assert.equal(again.profile.name, 'Asha V');
   assert.equal(again.profile.role, 'USER');
   assert.equal((await t.api('PUT', `/user/updateUser/${u.profile.id + 1}`, { token: u.token, body: { name: 'x' } })).status, 403);
+});
+
+test('Google sign-in stays disabled until a server OAuth client ID is configured', async () => {
+  const x = await boot({ googleClientId: '' });
+  try {
+    const result = await x.api('POST', '/auth/google', { body: { credential: 'not-a-real-token' } });
+    assert.equal(result.status, 503);
+  } finally { x.close(); }
 });
 
 test('sign-up validation and duplicate checks', async () => {
