@@ -47,6 +47,9 @@ export default function accountRoutes({ db, cfg, auth }) {
       auth.note(loginKey);
       throw new ApiError(401, 'Invalid email or password.');
     }
+    if (process.env.NODE_ENV === 'production' && (cfg.otpMode !== 'smtp' || !cfg.smtp.user || !cfg.smtp.pass)) {
+      throw new ApiError(503, 'Email sign-in is temporarily unavailable because SMTP is not configured on the server.');
+    }
     const sent = await auth.issueOtp(acc.row.email);
     const body = { message: sent.message, timeStamp: new Date().toISOString() };
     if (acc.kind === 'user') body.user = userView(acc.row);
