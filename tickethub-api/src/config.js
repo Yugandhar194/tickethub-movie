@@ -11,6 +11,8 @@ export function loadConfig(overrides = {}) {
     frontendUrl: (env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, ''),
     holdMinutes: num(env.SEAT_HOLD_MINUTES, 10),
     cancelCutoffHours: num(env.CANCEL_CUTOFF_HOURS, 2),
+    convenienceFeePct: Math.max(0, num(env.CONVENIENCE_FEE_PCT, 0)),
+    gstPct: Math.max(0, num(env.GST_PCT, 0)),
     tmdb: {
       key: (env.TMDB_API_KEY || '').trim(),
       base: (env.TMDB_BASE_URL || 'https://api.themoviedb.org/3').replace(/\/$/, ''),
