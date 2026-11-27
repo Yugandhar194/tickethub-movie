@@ -1,9 +1,9 @@
 const DEFAULT_GRAPH_VERSION = 'v24.0';
 
 function normalizeWhatsAppRecipient(phone) {
-  const digits = String(phone || '').replace(/\\D/g, '');
+  const digits = String(phone || '').replace(/\D/g, '');
   const recipient = digits.length === 10 ? `91${digits}` : digits;
-  return /^\\d{10,15}$/.test(recipient) ? recipient : null;
+  return /^\d{10,15}$/.test(recipient) ? recipient : null;
 }
 
 /**
