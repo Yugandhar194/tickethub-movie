@@ -20,7 +20,7 @@ export function loadConfig(overrides = {}) {
     },
     razorpay: { keyId: env.RAZORPAY_KEY_ID || '', keySecret: env.RAZORPAY_KEY_SECRET || '' },
     googleClientId: (env.GOOGLE_CLIENT_ID || '').trim(),
-    whatsapp: { token: env.WHATSAPP_ACCESS_TOKEN || '', phoneNumberId: env.WHATSAPP_PHONE_NUMBER_ID || '', template: env.WHATSAPP_TEMPLATE_NAME || 'tickethub_booking_confirmed', graphVersion: env.WHATSAPP_GRAPH_VERSION || 'v21.0' },
+    whatsapp: { token: env.WHATSAPP_ACCESS_TOKEN || '', phoneNumberId: env.WHATSAPP_PHONE_NUMBER_ID || '', template: env.WHATSAPP_TEMPLATE_NAME || 'tickethub_booking_confirmed', graphVersion: env.WHATSAPP_GRAPH_VERSION || 'v24.0' },
     smtp: { host: env.SMTP_HOST || '', port: num(env.SMTP_PORT, 587), user: env.SMTP_USER || '', pass: env.SMTP_PASS || '', from: env.SMTP_FROM || env.SMTP_USER || 'TicketHub <no-reply@tickethub.local>' },
     // "console" prints the OTP in the server log and returns it in the sign-in response (local development only).
     // It switches to "smtp" automatically when SMTP_HOST is set.
