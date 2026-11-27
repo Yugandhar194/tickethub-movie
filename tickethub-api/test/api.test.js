@@ -6,6 +6,7 @@ import { openDb } from '../src/db.js';
 import { createApp } from '../src/app.js';
 import { SEED_ACCOUNTS, ensureSchedule, seedAccounts, seedSampleMovies } from '../src/seed.js';
 import { addDays, isoDate } from '../src/util.js';
+import { sendWhatsAppTemplate } from '../src/notifications.js';
 
 async function boot(overrides = {}) {
   const cfg = loadConfig({ dbFile: ':memory:', otpMode: 'console', signinLimit: 1000, ...overrides });
@@ -290,4 +291,40 @@ test('contact form stores the message and validates input', async () => {
   assert.equal((await t.api('POST', '/contact/send', { body: { name: 'A', email: 'nope', message: 'hi' } })).status, 400);
   assert.equal((await t.api('POST', '/contact/send', { body: { name: 'A', email: 'a@example.com', phone: '1', message: 'hello' } })).status, 200);
   assert.equal(t.db.prepare('SELECT COUNT(*) AS c FROM contact_requests').get().c, 1);
+});
+
+
+test('WhatsApp booking template sends five parameters to the saved customer phone', async () => {
+  let request;
+  const result = await sendWhatsAppTemplate({
+    token: 'test-token',
+    phoneNumberId: '123456789',
+    template: 'tickethub_booking_confirmed',
+    graphVersion: 'v24.0',
+    phone: '+91 98765 43210',
+    parameters: ['TH-000001', 'Example Movie', '2026-12-01 at 18:30', 'A1, A2', 'INR 500.00'],
+    fetchImpl: async (url, options) => {
+      request = { url, options, body: JSON.parse(options.body) };
+      return new Response(JSON.stringify({ messages: [{ id: 'wamid.test' }] }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      });
+    },
+  });
+
+  assert.equal(result.sent, true);
+  assert.equal(request.body.to, '919876543210');
+  assert.equal(request.body.template.name, 'tickethub_booking_confirmed');
+  assert.equal(request.body.template.components[0].parameters.length, 5);
+  assert.equal(request.options.headers.Authorization, 'Bearer test-token');
+});
+
+test('WhatsApp delivery is safely skipped when not configured or phone is invalid', async () => {
+  const notConfigured = await sendWhatsAppTemplate({ phone: '9876543210', parameters: [] });
+  assert.equal(notConfigured.skipped, true);
+
+  const invalidPhone = await sendWhatsAppTemplate({
+    token: 'test-token', phoneNumberId: '123', template: 'tickethub_booking_confirmed',
+    phone: '123', parameters: ['1', '2', '3', '4', '5'],
+  });
+  assert.equal(invalidPhone.skipped, true);
 });
