@@ -4,7 +4,7 @@ const env = import.meta.env;
 export const BACKEND = (env.VITE_BACKEND || 'spring').toLowerCase() === 'dotnet' ? 'dotnet' : 'spring';
 
 export const API_BASE = (
-  env.VITE_API_BASE_URL || (BACKEND === 'dotnet' ? 'http://localhost:5266' : 'http://localhost:8080')
+  env.VITE_API_BASE_URL || (BACKEND === 'dotnet' ? 'http://localhost:5266' : (env.PROD ? 'https://tickethub-api-iota.vercel.app' : 'http://localhost:8080'))
 ).replace(/\/$/, '');
 export const AUTH_API_BASE_URL = (env.VITE_AUTH_API_BASE_URL || '').trim().replace(/\/$/, '');
 export const GOOGLE_CLIENT_ID = (env.VITE_GOOGLE_CLIENT_ID || '').trim();
