@@ -106,12 +106,14 @@ test('payment: price is enforced on the server, then the ticket PDF is available
   const id = (await t.api('POST', '/bookings/create', { token: a.token, body: { showtime: show.id, seatNumbers: ['C1', 'C2', 'C3'] } })).data;
   const total = show.amount * 3;
 
-  assert.equal((await t.api('POST', `/api/payments/create?bookingId=${id}&amount=1`, { token: a.token })).status, 400);
-  assert.equal((await t.api('POST', `/api/payments/create?bookingId=${id}&amount=${total}`)).status, 401);
+  assert.equal((await t.api('POST', `/api/payments/create?bookingId=${id}`, { token: a.token, body: { foodItems: [{ id: 999, quantity: 1 }] } })).status, 400, 'unknown food IDs are rejected');
+  assert.equal((await t.api('POST', `/api/payments/create?bookingId=${id}`, { body: { foodItems: [] } })).status, 401);
   assert.equal((await t.api('GET', `/tickets/download/${id}`, { token: a.token })).status, 402, 'no ticket before payment');
 
-  const order = (await t.api('POST', `/api/payments/create?bookingId=${id}&amount=${total + 300}`, { token: a.token })).data;
+  // The server derives the snack price from its catalogue; a forged client amount is ignored.
+  const order = (await t.api('POST', `/api/payments/create?bookingId=${id}`, { token: a.token, body: { amount: 1, foodItems: [{ id: 9, quantity: 4 }] } })).data;
   assert.equal(order.amount, (total + 300) * 100);
+  assert.equal(order.breakdown.food, 300);
   assert.equal(order.currency, 'INR');
   assert.equal((await t.api('POST', `/api/payments/success?orderId=order_fake&transactionId=x`, { token: a.token })).status, 404);
   assert.equal((await t.api('POST', `/api/payments/success?orderId=${order.id}&transactionId=pay_1`, { token: a.token })).status, 200);
