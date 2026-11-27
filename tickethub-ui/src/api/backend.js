@@ -190,7 +190,7 @@ export async function createPaymentOrder(bookingId, amount, foodItems = []) {
   if (typeof data === 'string') {
     return { id: data, amount: Math.round(amount * 100), currency: 'INR' };
   }
-  return { id: data.id, amount: data.amount, currency: data.currency || 'INR', mock: Boolean(data.mock) };
+  return { id: data.id, amount: data.amount, currency: data.currency || 'INR', mock: Boolean(data.mock), key_id: data.key_id };
 }
 export const confirmPayment = (orderId, transactionId, signature) =>
   AUTH_API_BASE_URL
