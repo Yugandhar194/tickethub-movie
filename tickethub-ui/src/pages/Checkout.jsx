@@ -65,6 +65,9 @@ export default function Checkout() {
     try {
       const foodItems = FOOD_ITEMS.filter((f) => qty[f.id]).map((f) => ({ id: f.id, quantity: qty[f.id] }));
       const order = await createPaymentOrder(bookingId, totals.total, foodItems);
+      if (!AUTH_API_BASE_URL && Number(order.amount) !== Math.round(totals.total * 100)) {
+        throw new Error('Checkout totals do not match the server. Check the fee and tax settings, then try again.');
+      }
       if (order.mock) {
         await confirmPayment(order.id, 'demo_payment');
         toast.success('Demo payment confirmed. No real charge was made.');
