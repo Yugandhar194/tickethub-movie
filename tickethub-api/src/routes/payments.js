@@ -118,6 +118,9 @@ export default function paymentRoutes({ db, cfg, svc, auth }) {
     if (!Number.isFinite(amount) || amount <= 0) throw new ApiError(400, 'Could not calculate a valid order total.');
 
     let order;
+    if (process.env.NODE_ENV === 'production' && cfg.paymentMode !== 'razorpay') {
+      throw new ApiError(503, 'Online payments are not configured yet. Please try again later.');
+    }
     if (cfg.paymentMode === 'razorpay') {
       const auth64 = Buffer.from(`${cfg.razorpay.keyId}:${cfg.razorpay.keySecret}`).toString('base64');
       const resp = await fetch('https://api.razorpay.com/v1/orders', {
