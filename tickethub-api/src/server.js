@@ -12,7 +12,7 @@ if (process.env.NODE_ENV === 'production') {
     throw new Error('Production requires a strong JWT_SECRET (at least 32 characters).');
   }
   if (cfg.paymentMode !== 'razorpay') throw new Error('Production requires both RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET.');
-  if (cfg.otpMode !== 'smtp') throw new Error('Production requires SMTP_HOST so sign-in codes are not exposed in API responses or logs.');
+  if (cfg.otpMode !== 'smtp' || !cfg.smtp.user || !cfg.smtp.pass) throw new Error('Production requires SMTP_HOST, SMTP_USER and SMTP_PASS so sign-in codes are delivered privately.');
   if (cfg.seedDemo) throw new Error('Set SEED_DEMO=false in production to disable demo accounts and sample data.');
 }
 const db = openDb(cfg.dbFile);
